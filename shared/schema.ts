@@ -103,6 +103,23 @@ export const orderQuestionAnswers = pgTable("order_question_answers", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+// Item Photos
+export const itemPhotos = pgTable("item_photos", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  customItemId: uuid("custom_item_id"),
+  photoUrl: text("photo_url").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+// Order Details
+export const orderDetails = pgTable("order_details", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orderId: uuid("order_id"),
+  name: text("name").notNull(),
+  value: text("value").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 // Schemas
 export const insertServiceTypeSchema = createInsertSchema(serviceTypes).omit({
   id: true,

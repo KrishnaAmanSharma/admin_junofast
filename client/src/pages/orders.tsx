@@ -69,7 +69,7 @@ export default function Orders() {
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="All Status">All Status</SelectItem>
                     <SelectItem value="Pending">Pending</SelectItem>
                     <SelectItem value="Confirmed">Confirmed</SelectItem>
                     <SelectItem value="In Progress">In Progress</SelectItem>
@@ -90,7 +90,7 @@ export default function Orders() {
                     <SelectValue placeholder="All Services" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Services</SelectItem>
+                    <SelectItem value="All Services">All Services</SelectItem>
                     {serviceTypes?.map((service) => (
                       <SelectItem key={service.id} value={service.name}>
                         {service.name}
