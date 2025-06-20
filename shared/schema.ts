@@ -27,7 +27,7 @@ export const profiles = pgTable("profiles", {
 // Orders
 export const orders = pgTable("orders", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id"),
+  userId: uuid("user_id").references(() => profiles.id),
   serviceType: text("service_type").notNull(),
   pickupAddress: text("pickup_address").notNull(),
   pickupPincode: text("pickup_pincode").notNull(),
@@ -44,7 +44,7 @@ export const orders = pgTable("orders", {
 // Common Items
 export const commonItems = pgTable("common_items", {
   id: uuid("id").defaultRandom().primaryKey(),
-  serviceTypeId: uuid("service_type_id"),
+  serviceTypeId: uuid("service_type_id").references(() => serviceTypes.id),
   name: text("name").notNull(),
   description: text("description").notNull(),
   imageUrl: text("image_url").notNull(),
@@ -56,13 +56,13 @@ export const commonItems = pgTable("common_items", {
 // Service Questions
 export const serviceQuestions = pgTable("service_questions", {
   id: uuid("id").defaultRandom().primaryKey(),
-  serviceTypeId: uuid("service_type_id").notNull(),
+  serviceTypeId: uuid("service_type_id").notNull().references(() => serviceTypes.id),
   question: text("question").notNull(),
   questionType: text("question_type").notNull(),
   isRequired: boolean("is_required").default(true),
   displayOrder: integer("display_order").default(0),
-  options: text("options"),
-  parentQuestionId: uuid("parent_question_id"),
+  options: jsonb("options"),
+  parentQuestionId: uuid("parent_question_id").references(() => serviceQuestions.id),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
@@ -71,8 +71,8 @@ export const serviceQuestions = pgTable("service_questions", {
 // Common Items in Orders
 export const commonItemsInOrders = pgTable("common_items_in_orders", {
   id: uuid("id").defaultRandom().primaryKey(),
-  orderId: uuid("order_id"),
-  itemId: uuid("item_id"),
+  orderId: uuid("order_id").references(() => orders.id),
+  itemId: uuid("item_id").references(() => commonItems.id),
   name: text("name").notNull(),
   quantity: integer("quantity").notNull().default(1),
   description: text("description"),
@@ -83,7 +83,7 @@ export const commonItemsInOrders = pgTable("common_items_in_orders", {
 // Custom Items
 export const customItems = pgTable("custom_items", {
   id: uuid("id").defaultRandom().primaryKey(),
-  orderId: uuid("order_id"),
+  orderId: uuid("order_id").references(() => orders.id),
   name: text("name").notNull(),
   description: text("description"),
   quantity: integer("quantity").notNull().default(1),
@@ -93,12 +93,12 @@ export const customItems = pgTable("custom_items", {
 // Order Question Answers
 export const orderQuestionAnswers = pgTable("order_question_answers", {
   id: uuid("id").defaultRandom().primaryKey(),
-  orderId: uuid("order_id").notNull(),
-  questionId: uuid("question_id").notNull(),
+  orderId: uuid("order_id").notNull().references(() => orders.id),
+  questionId: uuid("question_id").notNull().references(() => serviceQuestions.id),
   question: text("question").notNull(),
   answer: text("answer").notNull(),
   questionType: text("question_type").notNull(),
-  parentQuestionId: uuid("parent_question_id"),
+  parentQuestionId: uuid("parent_question_id").references(() => serviceQuestions.id),
   additionalData: jsonb("additional_data"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
@@ -106,7 +106,7 @@ export const orderQuestionAnswers = pgTable("order_question_answers", {
 // Item Photos
 export const itemPhotos = pgTable("item_photos", {
   id: uuid("id").defaultRandom().primaryKey(),
-  customItemId: uuid("custom_item_id"),
+  customItemId: uuid("custom_item_id").references(() => customItems.id),
   photoUrl: text("photo_url").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
@@ -114,7 +114,7 @@ export const itemPhotos = pgTable("item_photos", {
 // Order Details
 export const orderDetails = pgTable("order_details", {
   id: uuid("id").defaultRandom().primaryKey(),
-  orderId: uuid("order_id"),
+  orderId: uuid("order_id").references(() => orders.id),
   name: text("name").notNull(),
   value: text("value").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),

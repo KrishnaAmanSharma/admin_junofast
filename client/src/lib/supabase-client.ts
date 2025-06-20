@@ -287,7 +287,7 @@ export const supabaseStorage = {
     
     if (error) throw error;
     
-    // Transform back to camelCase and convert string options to arrays for Flutter compatibility
+    // Transform back to camelCase - keep options as proper arrays
     return {
       id: data.id,
       serviceTypeId: data.service_type_id,
@@ -295,9 +295,7 @@ export const supabaseStorage = {
       questionType: data.question_type,
       isRequired: data.is_required,
       displayOrder: data.display_order,
-      options: data.options && typeof data.options === 'string' 
-        ? data.options.split(',').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
-        : data.options,
+      options: data.options, // Keep as-is since they're now proper JSON arrays
       parentQuestionId: data.parent_question_id,
       isActive: data.is_active,
       createdAt: data.created_at,
