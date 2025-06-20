@@ -35,15 +35,15 @@ export function Sidebar() {
           
           return (
             <Link key={item.name} href={item.href}>
-              <a className={cn(
-                "flex items-center px-3 py-2 rounded-lg font-medium transition-colors",
+              <div className={cn(
+                "flex items-center px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer",
                 isActive
                   ? "bg-blue-50 text-primary-custom"
                   : "text-gray-700 hover:bg-gray-50"
               )}>
                 <Icon className="w-5 h-5 mr-3" />
                 {item.name}
-              </a>
+              </div>
             </Link>
           );
         })}
