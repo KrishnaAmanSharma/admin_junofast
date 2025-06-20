@@ -1,15 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Eye, Edit } from "lucide-react";
+import { Eye, Edit, Ban, CheckCircle } from "lucide-react";
+import { useState } from "react";
 import type { Profile } from "@shared/schema";
 
 interface UsersTableProps {
   profiles: Profile[];
   isLoading: boolean;
+  onViewUser?: (profile: Profile) => void;
+  onEditUser?: (profile: Profile) => void;
 }
 
-export function UsersTable({ profiles, isLoading }: UsersTableProps) {
+export function UsersTable({ profiles, isLoading, onViewUser, onEditUser }: UsersTableProps) {
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('en-IN');
   };
@@ -89,6 +92,8 @@ export function UsersTable({ profiles, isLoading }: UsersTableProps) {
                     variant="ghost"
                     size="icon"
                     className="text-primary-custom hover:text-blue-700"
+                    onClick={() => onViewUser?.(profile)}
+                    title="View user details"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -96,6 +101,8 @@ export function UsersTable({ profiles, isLoading }: UsersTableProps) {
                     variant="ghost"
                     size="icon"
                     className="text-warning-custom hover:text-yellow-700"
+                    onClick={() => onEditUser?.(profile)}
+                    title="Edit user"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>

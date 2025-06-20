@@ -255,13 +255,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/profiles/:id", async (req, res) => {
     try {
-      const profile = await storage.getProfile(req.params.id);
-      if (!profile) {
-        return res.status(404).json({ error: "Profile not found" });
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return res.status(404).json({ error: "Profile not found" });
+        }
+        throw error;
       }
-      res.json(profile);
+      
+      res.json(data);
     } catch (error) {
+      console.error("Error fetching profile:", error);
       res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  app.put("/api/profiles/:id", async (req, res) => {
+    try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const updates = {
+        ...req.body,
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', req.params.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      res.json(data);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ error: "Failed to update profile", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
