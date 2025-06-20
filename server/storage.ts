@@ -338,6 +338,6 @@ export class PostgresStorage implements IStorage {
   }
 }
 
-// Use MockStorage temporarily due to database connection issues
+// Temporarily using MockStorage until DATABASE_URL password is configured
 import { MockStorage } from "./mock-storage";
 export const storage = new MockStorage();
