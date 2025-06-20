@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertServiceTypeSchema, insertCommonItemSchema, insertServiceQuestionSchema, updateOrderSchema } from "@shared/schema";
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Service Types Routes
@@ -227,13 +228,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Users/Profiles Routes
   app.get("/api/profiles", async (req, res) => {
     try {
-      const { supabaseStorage } = await import("../client/src/lib/supabase-client");
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
       const search = req.query.search as string;
-      const profiles = await supabaseStorage.getProfiles(search);
-      res.json(profiles);
+      
+      let query = supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (search) {
+        query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      res.json(data || []);
     } catch (error) {
       console.error("Error fetching profiles:", error);
-      res.status(500).json({ error: "Failed to fetch profiles", details: error.message });
+      res.status(500).json({ error: "Failed to fetch profiles", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
