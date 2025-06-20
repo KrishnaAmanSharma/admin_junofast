@@ -80,16 +80,17 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       // Convert stored options back to line-by-line format for editing
       let newOptionsText = "";
       if (question.options) {
-        if (typeof question.options === 'string') {
-          // If it's already a comma-separated string, convert to lines
-          newOptionsText = question.options.split(',').join('\n');
-        } else if (Array.isArray(question.options)) {
-          // Handle legacy array format
+        if (Array.isArray(question.options)) {
+          // Handle current array format
           if (question.questionType === "sub_questions") {
             newOptionsText = (question.options as any[]).map((opt: any) => opt.question || opt).join('\n');
           } else {
+            // For dropdown, just join the array
             newOptionsText = (question.options as string[]).join('\n');
           }
+        } else if (typeof question.options === 'string') {
+          // Handle legacy comma-separated string format
+          newOptionsText = question.options.split(',').map((opt: string) => opt.trim()).join('\n');
         }
       }
       setOptionsText(newOptionsText);
@@ -128,10 +129,15 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       
       if (data.questionType === "dropdown" || data.questionType === "sub_questions") {
         if (data.options && data.options.trim()) {
-          // Always store as simple string for Flutter compatibility
-          // Convert line-by-line input to comma-separated string
+          // Convert line-by-line input to proper JSON array for Flutter compatibility
           const lines = data.options.split('\n').filter((line: string) => line.trim());
-          processedData.options = lines.join(',');
+          if (data.questionType === "dropdown") {
+            // For dropdown, store as simple array of strings
+            processedData.options = lines;
+          } else {
+            // For sub_questions, store as array of question objects
+            processedData.options = lines.map((line: string) => ({ question: line.trim() }));
+          }
         } else {
           processedData.options = null;
         }
