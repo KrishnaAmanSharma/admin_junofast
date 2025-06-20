@@ -29,7 +29,7 @@ interface ServiceQuestionModalProps {
   onClose: () => void;
 }
 
-const formSchema = insertServiceQuestionSchema.extend({
+const formSchema = insertServiceQuestionSchema.omit({ parentQuestionId: true }).extend({
   isRequired: z.boolean().default(true),
   isActive: z.boolean().default(true),
   displayOrder: z.number().default(0),
@@ -58,10 +58,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
     enabled: isOpen,
   });
 
-  const { data: parentQuestions } = useQuery<ServiceQuestion[]>({
-    queryKey: ["/api/service-questions"],
-    enabled: isOpen,
-  });
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -88,7 +85,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
         questionType: question.questionType || "text",
         isRequired: question.isRequired ?? true,
         displayOrder: question.displayOrder || 0,
-        parentQuestionId: question.parentQuestionId || "none",
+
         isActive: question.isActive ?? true,
         options: newOptionsText,
       });
@@ -100,7 +97,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
         questionType: "text",
         isRequired: true,
         displayOrder: 0,
-        parentQuestionId: "none",
+  
         isActive: true,
         options: "",
       });
@@ -113,6 +110,9 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
     mutationFn: async (data: any) => {
       // Process options based on question type
       let processedData = { ...data };
+      
+      // Set parentQuestionId to null since we removed this functionality
+      processedData.parentQuestionId = null;
       
       if (data.questionType === "dropdown" || data.questionType === "sub_questions") {
         if (data.options && data.options.trim()) {
@@ -162,14 +162,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    // Convert "none" to null for parentQuestionId, and ensure non-sub_questions have no parent
-    const processedData = {
-      ...data,
-      parentQuestionId: data.questionType === "sub_questions" && data.parentQuestionId !== "none" 
-        ? data.parentQuestionId 
-        : null
-    };
-    mutation.mutate(processedData);
+    mutation.mutate(data);
   };
 
   const handleClose = () => {
@@ -338,33 +331,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
               />
             )}
 
-            {selectedQuestionType === "sub_questions" && (
-              <FormField
-                control={form.control}
-                name="parentQuestionId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Parent Question (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="No parent question" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">No parent question</SelectItem>
-                        {parentQuestions?.filter(q => q.id !== question?.id).map((q) => (
-                          <SelectItem key={q.id} value={q.id}>
-                            {q.question.length > 50 ? `${q.question.substring(0, 50)}...` : q.question}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+
 
             <FormField
               control={form.control}
