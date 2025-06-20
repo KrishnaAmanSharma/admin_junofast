@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { supabaseStorage } from "@/lib/supabase-client";
+import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,16 +66,46 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      serviceTypeId: question?.serviceTypeId || "",
-      question: question?.question || "",
-      questionType: question?.questionType || "text",
-      isRequired: question?.isRequired ?? true,
-      displayOrder: question?.displayOrder || 0,
-      parentQuestionId: question?.parentQuestionId || undefined,
-      isActive: question?.isActive ?? true,
-      options: optionsText,
+      serviceTypeId: "",
+      question: "",
+      questionType: "text",
+      isRequired: true,
+      displayOrder: 0,
+      parentQuestionId: undefined,
+      isActive: true,
+      options: "",
     },
   });
+
+  // Reset form when question changes
+  useEffect(() => {
+    if (question) {
+      const newOptionsText = question.options ? JSON.stringify(question.options, null, 2) : "";
+      setOptionsText(newOptionsText);
+      form.reset({
+        serviceTypeId: question.serviceTypeId || "",
+        question: question.question || "",
+        questionType: question.questionType || "text",
+        isRequired: question.isRequired ?? true,
+        displayOrder: question.displayOrder || 0,
+        parentQuestionId: question.parentQuestionId || undefined,
+        isActive: question.isActive ?? true,
+        options: newOptionsText,
+      });
+    } else {
+      setOptionsText("");
+      form.reset({
+        serviceTypeId: "",
+        question: "",
+        questionType: "text",
+        isRequired: true,
+        displayOrder: 0,
+        parentQuestionId: undefined,
+        isActive: true,
+        options: "",
+      });
+    }
+  }, [question, form]);
 
   const selectedQuestionType = form.watch("questionType");
 
@@ -98,9 +130,9 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       }
 
       if (isEditing) {
-        await apiRequest("PUT", `/api/service-questions/${question.id}`, processedData);
+        return await supabaseStorage.updateServiceQuestion(question.id, processedData);
       } else {
-        await apiRequest("POST", "/api/service-questions", processedData);
+        return await supabaseStorage.createServiceQuestion(processedData);
       }
     },
     onSuccess: () => {
@@ -153,7 +185,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Service Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a service type" />
@@ -196,7 +228,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Question Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select question type" />
@@ -264,7 +296,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No parent question</SelectItem>
+                      <SelectItem value="none">No parent question</SelectItem>
                       {parentQuestions?.filter(q => q.id !== question?.id).map((q) => (
                         <SelectItem key={q.id} value={q.id}>
                           {q.question.length > 50 ? `${q.question.substring(0, 50)}...` : q.question}
