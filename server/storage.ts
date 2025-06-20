@@ -17,13 +17,15 @@ import type {
   OrderQuestionAnswer,
 } from "@shared/schema";
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = process.env.DATABASE_URL || process.env.VITE_DATABASE_URL;
 
 if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is required");
 }
 
-const client = postgres(DATABASE_URL);
+const client = postgres(DATABASE_URL, {
+  prepare: false,
+});
 const db = drizzle(client, { schema });
 
 export interface IStorage {
@@ -176,7 +178,7 @@ export class PostgresStorage implements IStorage {
   }
 
   async getOrders(filters?: { status?: string; serviceType?: string; limit?: number }): Promise<Order[]> {
-    let query = db.select().from(schema.orders);
+    let baseQuery = db.select().from(schema.orders);
     
     const conditions = [];
     if (filters?.status && filters.status !== "All Status") {
@@ -187,16 +189,16 @@ export class PostgresStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      baseQuery = baseQuery.where(and(...conditions)) as any;
     }
 
-    query = query.orderBy(desc(schema.orders.createdAt));
+    baseQuery = baseQuery.orderBy(desc(schema.orders.createdAt)) as any;
 
     if (filters?.limit) {
-      query = query.limit(filters.limit);
+      baseQuery = baseQuery.limit(filters.limit) as any;
     }
 
-    return await query;
+    return await baseQuery;
   }
 
   async getOrder(id: string): Promise<Order | undefined> {

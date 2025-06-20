@@ -2,11 +2,11 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "@shared/schema";
 
-const DATABASE_URL = import.meta.env.VITE_DATABASE_URL || process.env.DATABASE_URL;
+// For now, use direct DATABASE_URL until we get Supabase credentials
+const DATABASE_URL = import.meta.env.VITE_DATABASE_URL || "postgresql://localhost:5432/relocation_db";
 
-if (!DATABASE_URL) {
-  throw new Error("DATABASE_URL is required");
-}
+const client = postgres(DATABASE_URL, {
+  prepare: false,
+});
 
-const client = postgres(DATABASE_URL);
 export const db = drizzle(client, { schema });
