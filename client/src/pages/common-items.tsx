@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CommonItemModal } from "@/components/modals/common-item-modal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { supabaseStorage } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -22,7 +23,7 @@ export default function CommonItems() {
   const [selectedItem, setSelectedItem] = useState<CommonItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filters, setFilters] = useState({
-    serviceTypeId: "",
+    serviceTypeId: "all",
     search: "",
   });
   const { toast } = useToast();
@@ -37,7 +38,7 @@ export default function CommonItems() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/common-items/${id}`);
+      await supabaseStorage.deleteCommonItem(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/common-items"] });
@@ -46,10 +47,10 @@ export default function CommonItems() {
         description: "Common item deleted successfully",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to delete common item",
+        description: `Failed to delete common item: ${error.message}`,
         variant: "destructive",
       });
     },

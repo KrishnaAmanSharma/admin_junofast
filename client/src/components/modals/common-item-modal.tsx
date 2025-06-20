@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { supabaseStorage } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,9 +54,9 @@ export function CommonItemModal({ item, isOpen, onClose }: CommonItemModalProps)
   const mutation = useMutation({
     mutationFn: async (data: InsertCommonItem) => {
       if (isEditing) {
-        await apiRequest("PUT", `/api/common-items/${item.id}`, data);
+        return await supabaseStorage.updateCommonItem(item.id, data);
       } else {
-        await apiRequest("POST", "/api/common-items", data);
+        return await supabaseStorage.createCommonItem(data);
       }
     },
     onSuccess: () => {
@@ -67,10 +68,10 @@ export function CommonItemModal({ item, isOpen, onClose }: CommonItemModalProps)
       onClose();
       form.reset();
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: `Failed to ${isEditing ? "update" : "create"} common item`,
+        description: `Failed to ${isEditing ? "update" : "create"} common item: ${error.message}`,
         variant: "destructive",
       });
     },
