@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,13 +44,34 @@ export function CommonItemModal({ item, isOpen, onClose }: CommonItemModalProps)
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: item?.name || "",
-      description: item?.description || "",
-      imageUrl: item?.imageUrl || "",
-      serviceTypeId: item?.serviceTypeId || "",
-      isActive: item?.isActive ?? true,
+      name: "",
+      description: "",
+      imageUrl: "",
+      serviceTypeId: "",
+      isActive: true,
     },
   });
+
+  // Reset form when item changes
+  useEffect(() => {
+    if (item) {
+      form.reset({
+        name: item.name || "",
+        description: item.description || "",
+        imageUrl: item.imageUrl || "",
+        serviceTypeId: item.serviceTypeId || "",
+        isActive: item.isActive ?? true,
+      });
+    } else {
+      form.reset({
+        name: "",
+        description: "",
+        imageUrl: "",
+        serviceTypeId: "",
+        isActive: true,
+      });
+    }
+  }, [item, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: InsertCommonItem) => {
@@ -105,7 +127,7 @@ export function CommonItemModal({ item, isOpen, onClose }: CommonItemModalProps)
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Service Type</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ""}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a service type" />
