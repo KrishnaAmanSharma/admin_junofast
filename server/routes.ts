@@ -246,7 +246,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { data, error } = await query;
       if (error) throw error;
       
-      res.json(data || []);
+      // Map database field names to frontend field names
+      const mappedData = (data || []).map(profile => ({
+        ...profile,
+        fullName: profile.full_name,
+        phoneNumber: profile.phone_number,
+        avatarUrl: profile.avatar_url,
+        createdAt: profile.created_at,
+        updatedAt: profile.updated_at
+      }));
+      
+      res.json(mappedData);
     } catch (error) {
       console.error("Error fetching profiles:", error);
       res.status(500).json({ error: "Failed to fetch profiles", details: error instanceof Error ? error.message : String(error) });
@@ -272,7 +282,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw error;
       }
       
-      res.json(data);
+      // Map database field names to frontend field names
+      const mappedData = {
+        ...data,
+        fullName: data.full_name,
+        phoneNumber: data.phone_number,
+        avatarUrl: data.avatar_url,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+      
+      res.json(mappedData);
     } catch (error) {
       console.error("Error fetching profile:", error);
       res.status(500).json({ error: "Failed to fetch profile" });
@@ -285,8 +305,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
       
       const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Map frontend field names to database field names
       const updates = {
-        ...req.body,
+        email: req.body.email,
+        full_name: req.body.fullName,
+        phone_number: req.body.phoneNumber,
+        avatar_url: req.body.avatarUrl,
         updated_at: new Date().toISOString()
       };
       
@@ -299,7 +324,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (error) throw error;
       
-      res.json(data);
+      // Map database field names to frontend field names
+      const mappedData = {
+        ...data,
+        fullName: data.full_name,
+        phoneNumber: data.phone_number,
+        avatarUrl: data.avatar_url,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+      
+      res.json(mappedData);
     } catch (error) {
       console.error("Error updating profile:", error);
       res.status(500).json({ error: "Failed to update profile", details: error instanceof Error ? error.message : String(error) });
