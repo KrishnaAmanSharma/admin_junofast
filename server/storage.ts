@@ -159,11 +159,21 @@ export class PostgresStorage implements IStorage {
 
   async getServiceQuestions(serviceTypeId?: string): Promise<ServiceQuestion[]> {
     const query = db.select().from(schema.serviceQuestions);
+    let results;
     if (serviceTypeId) {
-      return await query.where(eq(schema.serviceQuestions.serviceTypeId, serviceTypeId))
+      results = await query.where(eq(schema.serviceQuestions.serviceTypeId, serviceTypeId))
         .orderBy(asc(schema.serviceQuestions.displayOrder));
+    } else {
+      results = await query.orderBy(asc(schema.serviceQuestions.displayOrder));
     }
-    return await query.orderBy(asc(schema.serviceQuestions.displayOrder));
+    
+    // Transform string options to arrays for Flutter compatibility
+    return results.map(question => ({
+      ...question,
+      options: question.options && typeof question.options === 'string' 
+        ? question.options.split(',').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+        : question.options
+    }));
   }
 
   async getServiceQuestion(id: string): Promise<ServiceQuestion | undefined> {
@@ -177,7 +187,15 @@ export class PostgresStorage implements IStorage {
       ...question,
       updatedAt: new Date(),
     }).returning();
-    return result[0];
+    
+    // Transform string options to arrays for Flutter compatibility
+    const created = result[0];
+    return {
+      ...created,
+      options: created.options && typeof created.options === 'string' 
+        ? created.options.split(',').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+        : created.options
+    };
   }
 
   async updateServiceQuestion(id: string, question: Partial<InsertServiceQuestion>): Promise<ServiceQuestion> {
@@ -185,7 +203,15 @@ export class PostgresStorage implements IStorage {
       .set({ ...question, updatedAt: new Date() })
       .where(eq(schema.serviceQuestions.id, id))
       .returning();
-    return result[0];
+    
+    // Transform string options to arrays for Flutter compatibility
+    const updated = result[0];
+    return {
+      ...updated,
+      options: updated.options && typeof updated.options === 'string' 
+        ? updated.options.split(',').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+        : updated.options
+    };
   }
 
   async deleteServiceQuestion(id: string): Promise<void> {

@@ -115,7 +115,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const questions = await storage.getServiceQuestions(serviceTypeId);
       res.json(questions);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch service questions" });
+      console.error("Service questions error:", error);
+      res.status(500).json({ error: "Failed to fetch service questions", details: error instanceof Error ? error.message : error });
     }
   });
 
