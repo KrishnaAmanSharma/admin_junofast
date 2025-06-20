@@ -76,23 +76,23 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
   // Reset form when question changes
   useEffect(() => {
     if (question) {
-      // Convert stored options back to line-by-line format for editing
-      let newOptionsText = "";
+      // Convert stored options to dropdown options array
+      let optionsArray: string[] = [];
       if (question.options) {
         if (Array.isArray(question.options)) {
           // Handle current array format
           if (question.questionType === "sub_questions") {
-            newOptionsText = (question.options as any[]).map((opt: any) => opt.question || opt).join('\n');
+            optionsArray = (question.options as any[]).map((opt: any) => opt.question || opt);
           } else {
-            // For dropdown, just join the array
-            newOptionsText = (question.options as string[]).join('\n');
+            // For dropdown, use the array directly
+            optionsArray = question.options as string[];
           }
         } else if (typeof question.options === 'string') {
           // Handle legacy comma-separated string format
-          newOptionsText = question.options.split(',').map((opt: string) => opt.trim()).join('\n');
+          optionsArray = question.options.split(',').map((opt: string) => opt.trim()).filter(opt => opt.length > 0);
         }
       }
-      setOptionsText(newOptionsText);
+      setDropdownOptions(optionsArray);
       form.reset({
         serviceTypeId: question.serviceTypeId || "",
         question: question.question || "",
@@ -100,10 +100,10 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
         isRequired: question.isRequired ?? true,
         displayOrder: question.displayOrder || 0,
         isActive: question.isActive ?? true,
-        options: newOptionsText,
+        options: "",
       });
     } else {
-      setOptionsText("");
+      setDropdownOptions([]);
       form.reset({
         serviceTypeId: "",
         question: "",
@@ -126,20 +126,14 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       // Set parentQuestionId to null since we removed this functionality
       processedData.parentQuestionId = null;
       
-      if (data.questionType === "dropdown" || data.questionType === "sub_questions") {
-        if (data.options && data.options.trim()) {
-          // Convert line-by-line input to proper JSON array for Flutter compatibility
-          const lines = data.options.split('\n').filter((line: string) => line.trim());
-          if (data.questionType === "dropdown") {
-            // For dropdown, store as simple array of strings
-            processedData.options = lines;
-          } else {
-            // For sub_questions, store as array of question objects
-            processedData.options = lines.map((line: string) => ({ question: line.trim() }));
-          }
-        } else {
-          processedData.options = null;
-        }
+      if (data.questionType === "dropdown") {
+        // For dropdown, use the dropdownOptions array
+        processedData.options = dropdownOptions.length > 0 ? dropdownOptions : null;
+      } else if (data.questionType === "sub_questions") {
+        // For sub_questions, convert dropdown options to question objects
+        processedData.options = dropdownOptions.length > 0 
+          ? dropdownOptions.map((option: string) => ({ question: option.trim() }))
+          : null;
       } else {
         processedData.options = null;
       }
@@ -158,7 +152,8 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       });
       onClose();
       form.reset();
-      setOptionsText("");
+      setDropdownOptions([]);
+      setNewOption("");
     },
     onError: (error: Error) => {
       toast({
@@ -176,7 +171,27 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
   const handleClose = () => {
     onClose();
     form.reset();
-    setOptionsText("");
+    setDropdownOptions([]);
+    setNewOption("");
+  };
+
+  // Functions to manage dropdown options
+  const addDropdownOption = () => {
+    if (newOption.trim() && !dropdownOptions.includes(newOption.trim())) {
+      setDropdownOptions([...dropdownOptions, newOption.trim()]);
+      setNewOption("");
+    }
+  };
+
+  const removeDropdownOption = (index: number) => {
+    setDropdownOptions(dropdownOptions.filter((_, i) => i !== index));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addDropdownOption();
+    }
   };
 
   const showOptionsField = selectedQuestionType === "dropdown" || selectedQuestionType === "sub_questions";
@@ -263,80 +278,69 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
             />
 
             {showOptionsField && (
-              <FormField
-                control={form.control}
-                name="options"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center gap-2">
-                      <FormLabel>
-                        {selectedQuestionType === "dropdown" ? "Dropdown Options" : "Sub Questions"}
-                      </FormLabel>
-                      <div className="group relative">
-                        <Button type="button" variant="outline" size="sm" className="h-6 w-6 p-0">
-                          <span className="text-xs">?</span>
-                        </Button>
-                        <div className="absolute left-0 top-8 z-50 hidden group-hover:block w-80 p-3 bg-white border rounded-lg shadow-lg">
-                          <h4 className="font-medium mb-2">
-                            {selectedQuestionType === "dropdown" ? "How to add dropdown options:" : "How to add sub questions:"}
-                          </h4>
-                          <div className="text-sm text-gray-600 space-y-2">
-                            {selectedQuestionType === "dropdown" ? (
-                              <>
-                                <p><strong>Simple way:</strong> Write one option per line</p>
-                                <div className="bg-gray-50 p-2 rounded text-xs font-mono">
-                                  Small (1-2 rooms)<br/>
-                                  Medium (3-4 rooms)<br/>
-                                  Large (5+ rooms)
-                                </div>
-                                <p><strong>Advanced:</strong> Use JSON format</p>
-                                <div className="bg-gray-50 p-2 rounded text-xs font-mono">
-                                  ["Small (1-2 rooms)", "Medium (3-4 rooms)", "Large (5+ rooms)"]
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <p><strong>Simple way:</strong> Write one question per line</p>
-                                <div className="bg-gray-50 p-2 rounded text-xs font-mono">
-                                  How many bedrooms?<br/>
-                                  How many bathrooms?<br/>
-                                  Any fragile items?
-                                </div>
-                                <p><strong>Advanced:</strong> Use JSON format</p>
-                                <div className="bg-gray-50 p-2 rounded text-xs font-mono">
-                                  [{`{"question": "How many bedrooms?"}`}, {`{"question": "How many bathrooms?"}`}]
-                                </div>
-                              </>
-                            )}
-                          </div>
+              <div className="space-y-3">
+                <FormLabel>
+                  {selectedQuestionType === "dropdown" ? "Dropdown Options" : "Sub Questions"}
+                </FormLabel>
+                
+                {/* Add new option input */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={selectedQuestionType === "dropdown" 
+                      ? "Enter option (e.g., Small 1-2 rooms)" 
+                      : "Enter question (e.g., How many bedrooms?)"
+                    }
+                    value={newOption}
+                    onChange={(e) => setNewOption(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addDropdownOption}
+                    disabled={!newOption.trim()}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add
+                  </Button>
+                </div>
+
+                {/* Display current options */}
+                {dropdownOptions.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Current Options:</p>
+                    <div className="space-y-1">
+                      {dropdownOptions.map((option, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between bg-gray-50 p-2 rounded border"
+                        >
+                          <span className="text-sm">{option}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeDropdownOption(index)}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                    <FormControl>
-                      <Textarea 
-                        placeholder={selectedQuestionType === "dropdown" 
-                          ? "Small (1-2 rooms)\nMedium (3-4 rooms)\nLarge (5+ rooms)"
-                          : "How many bedrooms?\nHow many bathrooms?\nAny fragile items?"
-                        }
-                        className="min-h-[120px]"
-                        {...field}
-                        value={optionsText}
-                        onChange={(e) => {
-                          setOptionsText(e.target.value);
-                          field.onChange(e.target.value);
-                        }}
-                      />
-                    </FormControl>
-                    <div className="text-xs text-gray-500">
-                      {selectedQuestionType === "dropdown" 
-                        ? "Tip: Write one option per line (Simple) or use JSON format (Advanced)"
-                        : "Tip: Write one question per line (Simple) or use JSON format (Advanced)"
-                      }
-                    </div>
-                    <FormMessage />
-                  </FormItem>
+                  </div>
                 )}
-              />
+
+                {dropdownOptions.length === 0 && (
+                  <p className="text-sm text-gray-500">
+                    {selectedQuestionType === "dropdown" 
+                      ? "Add dropdown options for users to choose from"
+                      : "Add sub-questions to collect additional details"
+                    }
+                  </p>
+                )}
+              </div>
             )}
 
             <FormField
