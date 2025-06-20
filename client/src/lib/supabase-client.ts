@@ -315,7 +315,16 @@ export const supabaseStorage = {
   async getOrders(filters?: { status?: string; serviceType?: string; limit?: number }) {
     let query = supabase
       .from('orders')
-      .select('*')
+      .select(`
+        *,
+        profiles:user_id (
+          id,
+          email,
+          full_name,
+          phone_number,
+          avatar_url
+        )
+      `)
       .order('created_at', { ascending: false });
 
     if (filters?.status && filters.status !== 'All Status') {
@@ -330,19 +339,81 @@ export const supabaseStorage = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data;
+    
+    // Map database field names to frontend field names
+    return (data || []).map(order => ({
+      ...order,
+      serviceType: order.service_type,
+      pickupAddress: order.pickup_address,
+      pickupPincode: order.pickup_pincode,
+      pickupLatitude: order.pickup_latitude,
+      pickupLongitude: order.pickup_longitude,
+      dropAddress: order.drop_address,
+      dropPincode: order.drop_pincode,
+      approxPrice: order.approx_price,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+      userId: order.user_id,
+      profile: order.profiles ? {
+        ...order.profiles,
+        fullName: order.profiles.full_name,
+        phoneNumber: order.profiles.phone_number,
+        avatarUrl: order.profiles.avatar_url
+      } : null
+    }));
   },
 
   async updateOrder(id: string, updates: any) {
+    // Map frontend field names to database field names
+    const dbUpdates: any = {};
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.approxPrice !== undefined) dbUpdates.approx_price = updates.approxPrice;
+    if (updates.serviceType !== undefined) dbUpdates.service_type = updates.serviceType;
+    if (updates.pickupAddress !== undefined) dbUpdates.pickup_address = updates.pickupAddress;
+    if (updates.pickupPincode !== undefined) dbUpdates.pickup_pincode = updates.pickupPincode;
+    if (updates.dropAddress !== undefined) dbUpdates.drop_address = updates.dropAddress;
+    if (updates.dropPincode !== undefined) dbUpdates.drop_pincode = updates.dropPincode;
+    dbUpdates.updated_at = new Date().toISOString();
+
     const { data, error } = await supabase
       .from('orders')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(dbUpdates)
       .eq('id', id)
-      .select()
+      .select(`
+        *,
+        profiles:user_id (
+          id,
+          email,
+          full_name,
+          phone_number,
+          avatar_url
+        )
+      `)
       .single();
     
     if (error) throw error;
-    return data;
+    
+    // Map response back to frontend field names
+    return {
+      ...data,
+      serviceType: data.service_type,
+      pickupAddress: data.pickup_address,
+      pickupPincode: data.pickup_pincode,
+      pickupLatitude: data.pickup_latitude,
+      pickupLongitude: data.pickup_longitude,
+      dropAddress: data.drop_address,
+      dropPincode: data.drop_pincode,
+      approxPrice: data.approx_price,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      userId: data.user_id,
+      profile: data.profiles ? {
+        ...data.profiles,
+        fullName: data.profiles.full_name,
+        phoneNumber: data.profiles.phone_number,
+        avatarUrl: data.profiles.avatar_url
+      } : null
+    };
   },
 
   async getProfiles(search?: string) {
@@ -421,6 +492,27 @@ export const supabaseStorage = {
       .limit(5);
 
     if (error) throw error;
-    return data;
+    
+    // Map database field names to frontend field names
+    return (data || []).map(order => ({
+      ...order,
+      serviceType: order.service_type,
+      pickupAddress: order.pickup_address,
+      pickupPincode: order.pickup_pincode,
+      pickupLatitude: order.pickup_latitude,
+      pickupLongitude: order.pickup_longitude,
+      dropAddress: order.drop_address,
+      dropPincode: order.drop_pincode,
+      approxPrice: order.approx_price,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+      userId: order.user_id,
+      profile: order.profiles ? {
+        ...order.profiles,
+        fullName: order.profiles.full_name,
+        phoneNumber: order.profiles.phone_number,
+        avatarUrl: order.profiles.avatar_url
+      } : null
+    }));
   }
 };
