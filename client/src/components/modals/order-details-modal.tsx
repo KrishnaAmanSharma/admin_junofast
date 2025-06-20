@@ -106,7 +106,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
           </div>
         </DialogHeader>
 
-        {isLoading ? (
+        {isLoading || !orderDetails ? (
           <div className="space-y-6 p-6">
             <div className="animate-pulse">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
