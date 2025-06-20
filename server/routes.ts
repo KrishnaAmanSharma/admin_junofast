@@ -111,9 +111,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Service Questions Routes
   app.get("/api/service-questions", async (req, res) => {
     try {
+      // Use supabase client directly to avoid connection issues
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.VITE_SUPABASE_URL!,
+        process.env.VITE_SUPABASE_ANON_KEY!
+      );
+      
       const serviceTypeId = req.query.serviceTypeId as string;
-      const questions = await storage.getServiceQuestions(serviceTypeId);
-      res.json(questions);
+      let query = supabase.from('service_questions').select('*').order('display_order');
+      
+      if (serviceTypeId && serviceTypeId !== 'all') {
+        query = query.eq('service_type_id', serviceTypeId);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      // Transform string options to arrays for Flutter compatibility
+      const transformedData = (data || []).map(question => ({
+        id: question.id,
+        serviceTypeId: question.service_type_id,
+        question: question.question,
+        questionType: question.question_type,
+        isRequired: question.is_required,
+        displayOrder: question.display_order,
+        options: question.options && typeof question.options === 'string' 
+          ? question.options.split(',').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+          : question.options,
+        parentQuestionId: question.parent_question_id,
+        isActive: question.is_active,
+        createdAt: question.created_at,
+        updatedAt: question.updated_at
+      }));
+      
+      res.json(transformedData);
     } catch (error) {
       console.error("Service questions error:", error);
       res.status(500).json({ error: "Failed to fetch service questions", details: error instanceof Error ? error.message : error });
