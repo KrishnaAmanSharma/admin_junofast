@@ -256,6 +256,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedAt: profile.updated_at
       }));
       
+      console.log("Original data:", data?.[0]);
+      console.log("Mapped data:", mappedData?.[0]);
+      
       res.json(mappedData);
     } catch (error) {
       console.error("Error fetching profiles:", error);

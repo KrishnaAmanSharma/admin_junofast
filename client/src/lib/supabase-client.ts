@@ -357,7 +357,16 @@ export const supabaseStorage = {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data;
+    
+    // Map database field names to frontend field names
+    return (data || []).map(profile => ({
+      ...profile,
+      fullName: profile.full_name,
+      phoneNumber: profile.phone_number,
+      avatarUrl: profile.avatar_url,
+      createdAt: profile.created_at,
+      updatedAt: profile.updated_at
+    }));
   },
 
   async getDashboardMetrics() {
