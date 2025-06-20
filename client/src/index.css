@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(222, 84%, 4.9%);
+  --muted: hsl(210, 40%, 98%);
+  --muted-foreground: hsl(215.4, 16.3%, 46.9%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 84%, 4.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 84%, 4.9%);
+  --border: hsl(214.3, 31.8%, 91.4%);
+  --input: hsl(214.3, 31.8%, 91.4%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(160, 84%, 39%);
+  --secondary-foreground: hsl(222, 84%, 4.9%);
+  --accent: hsl(210, 40%, 98%);
+  --accent-foreground: hsl(222, 84%, 4.9%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --warning: hsl(25, 95%, 53%);
+  --warning-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(207, 90%, 54%);
+  --radius: 0.5rem;
+  --admin-slate: hsl(215, 16%, 47%);
+  --admin-background: hsl(210, 20%, 98%);
+}
+
+.dark {
+  --background: hsl(222, 84%, 4.9%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(217, 32%, 17%);
+  --muted-foreground: hsl(215, 20%, 65%);
+  --popover: hsl(222, 84%, 4.9%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(222, 84%, 4.9%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(217, 32%, 17%);
+  --input: hsl(217, 32%, 17%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(222, 84%, 4.9%);
+  --secondary: hsl(160, 84%, 39%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(217, 32%, 17%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 62%, 30%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --warning: hsl(25, 95%, 53%);
+  --warning-foreground: hsl(222, 84%, 4.9%);
+  --ring: hsl(207, 90%, 54%);
+  --admin-slate: hsl(215, 20%, 65%);
+  --admin-background: hsl(222, 84%, 4.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-admin-background text-foreground font-sans antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-admin-slate {
+    color: var(--admin-slate);
+  }
+  
+  .bg-admin-background {
+    background-color: var(--admin-background);
+  }
+
+  .text-primary-custom {
+    color: hsl(207, 90%, 54%);
+  }
+
+  .text-secondary-custom {
+    color: hsl(160, 84%, 39%);
+  }
+
+  .text-warning-custom {
+    color: hsl(25, 95%, 53%);
+  }
+
+  .text-destructive-custom {
+    color: hsl(0, 84%, 60%);
+  }
+
+  .bg-primary-custom {
+    background-color: hsl(207, 90%, 54%);
+  }
+
+  .bg-secondary-custom {
+    background-color: hsl(160, 84%, 39%);
+  }
+
+  .bg-warning-custom {
+    background-color: hsl(25, 95%, 53%);
+  }
+
+  .bg-destructive-custom {
+    background-color: hsl(0, 84%, 60%);
+  }
+}
