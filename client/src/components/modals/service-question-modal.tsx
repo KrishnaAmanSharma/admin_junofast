@@ -77,7 +77,21 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
   // Reset form when question changes
   useEffect(() => {
     if (question) {
-      const newOptionsText = question.options ? JSON.stringify(question.options, null, 2) : "";
+      // Convert stored options back to line-by-line format for editing
+      let newOptionsText = "";
+      if (question.options) {
+        if (typeof question.options === 'string') {
+          // If it's already a comma-separated string, convert to lines
+          newOptionsText = question.options.split(',').join('\n');
+        } else if (Array.isArray(question.options)) {
+          // Handle legacy array format
+          if (question.questionType === "sub_questions") {
+            newOptionsText = question.options.map((opt: any) => opt.question || opt).join('\n');
+          } else {
+            newOptionsText = question.options.join('\n');
+          }
+        }
+      }
       setOptionsText(newOptionsText);
       form.reset({
         serviceTypeId: question.serviceTypeId || "",
@@ -114,19 +128,10 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       
       if (data.questionType === "dropdown" || data.questionType === "sub_questions") {
         if (data.options && data.options.trim()) {
-          try {
-            // Try to parse as JSON first
-            processedData.options = JSON.parse(data.options);
-          } catch (error) {
-            // If not valid JSON, treat as simple list (one option per line)
-            const lines = data.options.split('\n').filter((line: string) => line.trim());
-            if (data.questionType === "dropdown") {
-              processedData.options = lines;
-            } else {
-              // For sub_questions, create simple structure
-              processedData.options = lines.map((line: string) => ({ question: line.trim() }));
-            }
-          }
+          // Always store as simple string for Flutter compatibility
+          // Convert line-by-line input to comma-separated string
+          const lines = data.options.split('\n').filter((line: string) => line.trim());
+          processedData.options = lines.join(',');
         } else {
           processedData.options = null;
         }

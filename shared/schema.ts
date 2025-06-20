@@ -61,7 +61,7 @@ export const serviceQuestions = pgTable("service_questions", {
   questionType: text("question_type").notNull(),
   isRequired: boolean("is_required").default(true),
   displayOrder: integer("display_order").default(0),
-  options: jsonb("options"),
+  options: text("options"),
   parentQuestionId: uuid("parent_question_id"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
