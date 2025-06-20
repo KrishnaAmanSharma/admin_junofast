@@ -210,7 +210,7 @@ export const supabaseStorage = {
     const { data, error } = await query;
     if (error) throw error;
     
-    // Transform data to match expected schema
+    // Transform data to match expected schema and convert string options to arrays for Flutter compatibility
     return data?.map(question => ({
       id: question.id,
       serviceTypeId: question.service_type_id,
@@ -218,7 +218,9 @@ export const supabaseStorage = {
       questionType: question.question_type,
       isRequired: question.is_required,
       displayOrder: question.display_order,
-      options: question.options,
+      options: question.options && typeof question.options === 'string' 
+        ? question.options.split(',').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+        : question.options,
       parentQuestionId: question.parent_question_id,
       isActive: question.is_active,
       createdAt: question.created_at,
@@ -249,7 +251,7 @@ export const supabaseStorage = {
     
     if (error) throw error;
     
-    // Transform back to camelCase
+    // Transform back to camelCase and convert string options to arrays for Flutter compatibility
     return {
       id: data.id,
       serviceTypeId: data.service_type_id,
@@ -257,7 +259,9 @@ export const supabaseStorage = {
       questionType: data.question_type,
       isRequired: data.is_required,
       displayOrder: data.display_order,
-      options: data.options,
+      options: data.options && typeof data.options === 'string' 
+        ? data.options.split(',').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+        : data.options,
       parentQuestionId: data.parent_question_id,
       isActive: data.is_active,
       createdAt: data.created_at,
@@ -287,7 +291,7 @@ export const supabaseStorage = {
     
     if (error) throw error;
     
-    // Transform back to camelCase
+    // Transform back to camelCase and convert string options to arrays for Flutter compatibility
     return {
       id: data.id,
       serviceTypeId: data.service_type_id,
@@ -295,7 +299,9 @@ export const supabaseStorage = {
       questionType: data.question_type,
       isRequired: data.is_required,
       displayOrder: data.display_order,
-      options: data.options,
+      options: data.options && typeof data.options === 'string' 
+        ? data.options.split(',').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
+        : data.options,
       parentQuestionId: data.parent_question_id,
       isActive: data.is_active,
       createdAt: data.created_at,
