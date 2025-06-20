@@ -155,10 +155,12 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    // Convert "none" to null for parentQuestionId
+    // Convert "none" to null for parentQuestionId, and ensure non-sub_questions have no parent
     const processedData = {
       ...data,
-      parentQuestionId: data.parentQuestionId === "none" ? null : data.parentQuestionId
+      parentQuestionId: data.questionType === "sub_questions" && data.parentQuestionId !== "none" 
+        ? data.parentQuestionId 
+        : null
     };
     mutation.mutate(processedData);
   };
@@ -288,31 +290,33 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
               />
             )}
 
-            <FormField
-              control={form.control}
-              name="parentQuestionId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Parent Question (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="No parent question" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">No parent question</SelectItem>
-                      {parentQuestions?.filter(q => q.id !== question?.id).map((q) => (
-                        <SelectItem key={q.id} value={q.id}>
-                          {q.question.length > 50 ? `${q.question.substring(0, 50)}...` : q.question}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {selectedQuestionType === "sub_questions" && (
+              <FormField
+                control={form.control}
+                name="parentQuestionId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Parent Question (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="No parent question" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No parent question</SelectItem>
+                        {parentQuestions?.filter(q => q.id !== question?.id).map((q) => (
+                          <SelectItem key={q.id} value={q.id}>
+                            {q.question.length > 50 ? `${q.question.substring(0, 50)}...` : q.question}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
