@@ -216,7 +216,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 <div>
                   <h4 className="font-semibold text-admin-slate mb-3">Common Items</h4>
                   <div className="space-y-2">
-                    {orderDetails.commonItems.map((item) => (
+                    {orderDetails?.commonItems?.map((item: any) => (
                       <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center space-x-3">
                           <img 
@@ -275,12 +275,12 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                     {orderDetails?.questionAnswers?.map((qa: any) => (
                       <div key={qa.id} className="p-3 bg-gray-50 rounded-lg">
                         <p className="font-medium text-admin-slate mb-1">{qa.question}</p>
-                        <p className="text-sm text-gray-600">
-                          <Badge variant="outline" className="mr-2">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Badge variant="outline">
                             {qa.questionType}
                           </Badge>
-                          {qa.answer}
-                        </p>
+                          <span>{qa.answer}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
