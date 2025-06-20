@@ -20,7 +20,12 @@ export default function Users() {
 
   const { data: profiles, isLoading } = useQuery<Profile[]>({
     queryKey: ["/api/profiles", { search: searchTerm }],
+    staleTime: 0, // Always refetch to get latest data
+    cacheTime: 0, // Don't cache the data
   });
+
+  // Debug logging
+  console.log("Profiles data:", profiles);
 
   const handleSearch = () => {
     // Search is handled by the query key dependency
