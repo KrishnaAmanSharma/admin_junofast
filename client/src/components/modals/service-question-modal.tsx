@@ -46,14 +46,12 @@ const questionTypes = [
   { value: "boolean", label: "Boolean" },
   { value: "dropdown", label: "Dropdown" },
   { value: "add_items", label: "Add Items" },
-  { value: "sub_questions", label: "Sub Questions" },
 ];
 
 export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuestionModalProps) {
   const { toast } = useToast();
   const isEditing = !!question;
   const [dropdownOptions, setDropdownOptions] = useState<string[]>([]);
-  const [subQuestions, setSubQuestions] = useState<string[]>([]);
   const [newOption, setNewOption] = useState("");
 
   const { data: serviceTypes } = useQuery<ServiceType[]>({
@@ -77,32 +75,20 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
   // Reset form when question changes
   useEffect(() => {
     if (question) {
-      // Convert stored options to appropriate arrays
+      // Convert stored options to dropdown options array
       let dropdownOptionsArray: string[] = [];
-      let subQuestionsArray: string[] = [];
       
       if (question.options) {
         if (Array.isArray(question.options)) {
-          if (question.questionType === "sub_questions") {
-            // For sub_questions, extract question text from objects
-            subQuestionsArray = (question.options as any[]).map((opt: any) => opt.question || opt);
-          } else {
-            // For dropdown, use the array directly
-            dropdownOptionsArray = question.options as string[];
-          }
+          // For dropdown, use the array directly
+          dropdownOptionsArray = question.options as string[];
         } else if (typeof question.options === 'string') {
           // Handle legacy comma-separated string format
-          const optionsArray = question.options.split(',').map((opt: string) => opt.trim()).filter(opt => opt.length > 0);
-          if (question.questionType === "sub_questions") {
-            subQuestionsArray = optionsArray;
-          } else {
-            dropdownOptionsArray = optionsArray;
-          }
+          dropdownOptionsArray = question.options.split(',').map((opt: string) => opt.trim()).filter(opt => opt.length > 0);
         }
       }
       
       setDropdownOptions(dropdownOptionsArray);
-      setSubQuestions(subQuestionsArray);
       form.reset({
         serviceTypeId: question.serviceTypeId || "",
         question: question.question || "",
@@ -114,7 +100,6 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       });
     } else {
       setDropdownOptions([]);
-      setSubQuestions([]);
       form.reset({
         serviceTypeId: "",
         question: "",
@@ -140,21 +125,6 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       if (data.questionType === "dropdown") {
         // For dropdown, use the dropdownOptions array
         processedData.options = dropdownOptions.length > 0 ? dropdownOptions : null;
-      } else if (data.questionType === "sub_questions") {
-        // For sub_questions, convert to question objects with proper structure for Flutter
-        processedData.options = subQuestions.length > 0 
-          ? subQuestions.map((questionText: string, index: number) => ({
-              id: `sub_${Date.now()}_${index}`, // Generate unique ID
-              service_type_id: data.serviceTypeId,
-              question: questionText.trim(),
-              question_type: "text", // Default type for sub-questions
-              is_required: false, // Sub-questions are typically optional
-              display_order: index,
-              is_active: true,
-              options: null,
-              sub_questions: null
-            }))
-          : null;
       } else {
         processedData.options = null;
       }
@@ -174,7 +144,6 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       onClose();
       form.reset();
       setDropdownOptions([]);
-      setSubQuestions([]);
       setNewOption("");
     },
     onError: (error: Error) => {
@@ -194,51 +163,29 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
     onClose();
     form.reset();
     setDropdownOptions([]);
-    setSubQuestions([]);
     setNewOption("");
   };
 
-  // Functions to manage dropdown options and sub-questions
-  const addOption = () => {
-    if (!newOption.trim()) return;
-    
-    const selectedType = form.watch("questionType");
-    if (selectedType === "dropdown") {
-      if (!dropdownOptions.includes(newOption.trim())) {
-        setDropdownOptions([...dropdownOptions, newOption.trim()]);
-        setNewOption("");
-      }
-    } else if (selectedType === "sub_questions") {
-      if (!subQuestions.includes(newOption.trim())) {
-        setSubQuestions([...subQuestions, newOption.trim()]);
-        setNewOption("");
-      }
+  // Functions to manage dropdown options
+  const addDropdownOption = () => {
+    if (newOption.trim() && !dropdownOptions.includes(newOption.trim())) {
+      setDropdownOptions([...dropdownOptions, newOption.trim()]);
+      setNewOption("");
     }
   };
 
-  const removeOption = (index: number) => {
-    const selectedType = form.watch("questionType");
-    if (selectedType === "dropdown") {
-      setDropdownOptions(dropdownOptions.filter((_, i) => i !== index));
-    } else if (selectedType === "sub_questions") {
-      setSubQuestions(subQuestions.filter((_, i) => i !== index));
-    }
+  const removeDropdownOption = (index: number) => {
+    setDropdownOptions(dropdownOptions.filter((_, i) => i !== index));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      addOption();
+      addDropdownOption();
     }
   };
 
-  // Get current options array based on question type
-  const getCurrentOptions = () => {
-    const selectedType = form.watch("questionType");
-    return selectedType === "sub_questions" ? subQuestions : dropdownOptions;
-  };
-
-  const showOptionsField = selectedQuestionType === "dropdown" || selectedQuestionType === "sub_questions";
+  const showOptionsField = selectedQuestionType === "dropdown";
 
   if (!isOpen) return null;
 
@@ -323,17 +270,12 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
 
             {showOptionsField && (
               <div className="space-y-3">
-                <FormLabel>
-                  {selectedQuestionType === "dropdown" ? "Dropdown Options" : "Sub Questions"}
-                </FormLabel>
+                <FormLabel>Dropdown Options</FormLabel>
                 
                 {/* Add new option input */}
                 <div className="flex gap-2">
                   <Input
-                    placeholder={selectedQuestionType === "dropdown" 
-                      ? "Enter option (e.g., Small 1-2 rooms)" 
-                      : "Enter question (e.g., How many bedrooms?)"
-                    }
+                    placeholder="Enter option (e.g., Small 1-2 rooms)"
                     value={newOption}
                     onChange={(e) => setNewOption(e.target.value)}
                     onKeyPress={handleKeyPress}
@@ -341,7 +283,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
                   />
                   <Button
                     type="button"
-                    onClick={addOption}
+                    onClick={addDropdownOption}
                     disabled={!newOption.trim()}
                     size="sm"
                   >
@@ -351,13 +293,11 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
                 </div>
 
                 {/* Display current options */}
-                {getCurrentOptions().length > 0 && (
+                {dropdownOptions.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">
-                      {selectedQuestionType === "dropdown" ? "Current Options:" : "Current Sub-Questions:"}
-                    </p>
+                    <p className="text-sm font-medium">Current Options:</p>
                     <div className="space-y-1">
-                      {getCurrentOptions().map((option, index) => (
+                      {dropdownOptions.map((option, index) => (
                         <div
                           key={index}
                           className="flex items-center justify-between bg-gray-50 p-2 rounded border"
@@ -367,7 +307,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeOption(index)}
+                            onClick={() => removeDropdownOption(index)}
                             className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                           >
                             <X className="h-3 w-3" />
@@ -378,12 +318,9 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
                   </div>
                 )}
 
-                {getCurrentOptions().length === 0 && (
+                {dropdownOptions.length === 0 && (
                   <p className="text-sm text-gray-500">
-                    {selectedQuestionType === "dropdown" 
-                      ? "Add dropdown options for users to choose from"
-                      : "Add sub-questions to collect additional details"
-                    }
+                    Add dropdown options for users to choose from
                   </p>
                 )}
               </div>
