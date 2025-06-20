@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { ServiceTypeModal } from "@/components/modals/service-type-modal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { supabaseStorage } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import type { ServiceType } from "@shared/schema";
@@ -19,7 +20,7 @@ export default function ServiceTypes() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/service-types/${id}`);
+      await supabaseStorage.deleteServiceType(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-types"] });
@@ -28,10 +29,10 @@ export default function ServiceTypes() {
         description: "Service type deleted successfully",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to delete service type",
+        description: `Failed to delete service type: ${error.message}`,
         variant: "destructive",
       });
     },

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { supabaseStorage } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,9 +42,9 @@ export function ServiceTypeModal({ serviceType, isOpen, onClose }: ServiceTypeMo
   const mutation = useMutation({
     mutationFn: async (data: InsertServiceType) => {
       if (isEditing) {
-        await apiRequest("PUT", `/api/service-types/${serviceType.id}`, data);
+        return await supabaseStorage.updateServiceType(serviceType.id, data);
       } else {
-        await apiRequest("POST", "/api/service-types", data);
+        return await supabaseStorage.createServiceType(data);
       }
     },
     onSuccess: () => {
@@ -55,10 +56,10 @@ export function ServiceTypeModal({ serviceType, isOpen, onClose }: ServiceTypeMo
       onClose();
       form.reset();
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: `Failed to ${isEditing ? "update" : "create"} service type`,
+        description: `Failed to ${isEditing ? "update" : "create"} service type: ${error.message}`,
         variant: "destructive",
       });
     },

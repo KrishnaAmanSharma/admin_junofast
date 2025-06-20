@@ -15,34 +15,79 @@ export const supabaseStorage = {
     const { data, error } = await supabase
       .from('service_types')
       .select('*')
-      .eq('is_active', true)
       .order('name');
     
     if (error) throw error;
-    return data;
+    
+    // Transform data to match expected schema
+    return data?.map(item => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      imageUrl: item.image_url,
+      isActive: item.is_active,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at
+    })) || [];
   },
 
   async createServiceType(serviceType: any) {
+    // Transform camelCase to snake_case for database
+    const dbServiceType = {
+      name: serviceType.name,
+      description: serviceType.description,
+      image_url: serviceType.imageUrl,
+      is_active: serviceType.isActive ?? true,
+    };
+
     const { data, error } = await supabase
       .from('service_types')
-      .insert([serviceType])
+      .insert([dbServiceType])
       .select()
       .single();
     
     if (error) throw error;
-    return data;
+    
+    // Transform back to camelCase
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      imageUrl: data.image_url,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
   },
 
   async updateServiceType(id: string, updates: any) {
+    // Transform camelCase to snake_case for database
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.description !== undefined) dbUpdates.description = updates.description;
+    if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
+    if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
+    dbUpdates.updated_at = new Date().toISOString();
+
     const { data, error } = await supabase
       .from('service_types')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update(dbUpdates)
       .eq('id', id)
       .select()
       .single();
     
     if (error) throw error;
-    return data;
+    
+    // Transform back to camelCase
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      imageUrl: data.image_url,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
   },
 
   async deleteServiceType(id: string) {
