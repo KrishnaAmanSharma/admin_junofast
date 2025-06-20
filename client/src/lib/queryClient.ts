@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { supabaseStorage } from "./supabase-client";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -29,16 +30,41 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
+    try {
+      const endpoint = queryKey[0] as string;
+      
+      // Route to Supabase client methods based on endpoint
+      if (endpoint === '/api/service-types') {
+        return await supabaseStorage.getServiceTypes() as T;
+      }
+      if (endpoint === '/api/orders') {
+        return await supabaseStorage.getOrders() as T;
+      }
+      if (endpoint === '/api/profiles') {
+        return await supabaseStorage.getProfiles() as T;
+      }
+      if (endpoint === '/api/dashboard/metrics') {
+        return await supabaseStorage.getDashboardMetrics() as T;
+      }
+      if (endpoint === '/api/dashboard/recent-orders') {
+        return await supabaseStorage.getRecentOrdersRequiringAttention() as T;
+      }
+      
+      // Fallback to regular fetch for other endpoints
+      const res = await fetch(endpoint, {
+        credentials: "include",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      return await res.json();
+    } catch (error) {
+      console.error('Query failed:', error);
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
