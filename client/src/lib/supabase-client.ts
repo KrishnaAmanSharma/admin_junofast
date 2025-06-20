@@ -197,6 +197,121 @@ export const supabaseStorage = {
     if (error) throw error;
   },
 
+  async getServiceQuestions(serviceTypeId?: string) {
+    let query = supabase
+      .from('service_questions')
+      .select('*')
+      .order('display_order');
+
+    if (serviceTypeId && serviceTypeId !== 'all') {
+      query = query.eq('service_type_id', serviceTypeId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    // Transform data to match expected schema
+    return data?.map(question => ({
+      id: question.id,
+      serviceTypeId: question.service_type_id,
+      question: question.question,
+      questionType: question.question_type,
+      isRequired: question.is_required,
+      displayOrder: question.display_order,
+      options: question.options,
+      parentQuestionId: question.parent_question_id,
+      isActive: question.is_active,
+      createdAt: question.created_at,
+      updatedAt: question.updated_at
+    })) || [];
+  },
+
+  async createServiceQuestion(question: any) {
+    // Transform camelCase to snake_case for database
+    const dbQuestion = {
+      service_type_id: question.serviceTypeId,
+      question: question.question,
+      question_type: question.questionType,
+      is_required: question.isRequired ?? true,
+      display_order: question.displayOrder ?? 0,
+      options: question.options || null,
+      parent_question_id: question.parentQuestionId || null,
+      is_active: question.isActive ?? true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('service_questions')
+      .insert(dbQuestion)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Transform back to camelCase
+    return {
+      id: data.id,
+      serviceTypeId: data.service_type_id,
+      question: data.question,
+      questionType: data.question_type,
+      isRequired: data.is_required,
+      displayOrder: data.display_order,
+      options: data.options,
+      parentQuestionId: data.parent_question_id,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async updateServiceQuestion(id: string, updates: any) {
+    // Transform camelCase to snake_case for database
+    const dbUpdates: any = {};
+    if (updates.serviceTypeId !== undefined) dbUpdates.service_type_id = updates.serviceTypeId;
+    if (updates.question !== undefined) dbUpdates.question = updates.question;
+    if (updates.questionType !== undefined) dbUpdates.question_type = updates.questionType;
+    if (updates.isRequired !== undefined) dbUpdates.is_required = updates.isRequired;
+    if (updates.displayOrder !== undefined) dbUpdates.display_order = updates.displayOrder;
+    if (updates.options !== undefined) dbUpdates.options = updates.options;
+    if (updates.parentQuestionId !== undefined) dbUpdates.parent_question_id = updates.parentQuestionId;
+    if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
+    dbUpdates.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('service_questions')
+      .update(dbUpdates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Transform back to camelCase
+    return {
+      id: data.id,
+      serviceTypeId: data.service_type_id,
+      question: data.question,
+      questionType: data.question_type,
+      isRequired: data.is_required,
+      displayOrder: data.display_order,
+      options: data.options,
+      parentQuestionId: data.parent_question_id,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async deleteServiceQuestion(id: string) {
+    const { error } = await supabase
+      .from('service_questions')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
   async getOrders(filters?: { status?: string; serviceType?: string; limit?: number }) {
     let query = supabase
       .from('orders')

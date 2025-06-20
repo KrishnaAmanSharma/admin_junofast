@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ServiceQuestionModal } from "@/components/modals/service-question-modal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { supabaseStorage } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -22,8 +23,8 @@ export default function ServiceQuestions() {
   const [selectedQuestion, setSelectedQuestion] = useState<ServiceQuestion | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filters, setFilters] = useState({
-    serviceTypeId: "",
-    questionType: "",
+    serviceTypeId: "all",
+    questionType: "all",
   });
   const { toast } = useToast();
 
@@ -37,7 +38,7 @@ export default function ServiceQuestions() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/service-questions/${id}`);
+      await supabaseStorage.deleteServiceQuestion(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-questions"] });
@@ -46,10 +47,10 @@ export default function ServiceQuestions() {
         description: "Service question deleted successfully",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to delete service question",
+        description: `Failed to delete service question: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -93,7 +94,7 @@ export default function ServiceQuestions() {
   };
 
   const filteredQuestions = serviceQuestions?.filter(question => {
-    if (filters.questionType && question.questionType !== filters.questionType) {
+    if (filters.questionType && filters.questionType !== "all" && question.questionType !== filters.questionType) {
       return false;
     }
     return true;
@@ -128,7 +129,7 @@ export default function ServiceQuestions() {
                     <SelectValue placeholder="All Service Types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Service Types</SelectItem>
+                    <SelectItem value="all">All Service Types</SelectItem>
                     {serviceTypes?.map((service) => (
                       <SelectItem key={service.id} value={service.id}>
                         {service.name}
@@ -150,7 +151,7 @@ export default function ServiceQuestions() {
                     <SelectValue placeholder="All Types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Types</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="text">Text</SelectItem>
                     <SelectItem value="number">Number</SelectItem>
                     <SelectItem value="date">Date</SelectItem>

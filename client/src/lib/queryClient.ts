@@ -47,6 +47,10 @@ export const getQueryFn: <T>(options: {
       if (endpoint === '/api/profiles') {
         return await supabaseStorage.getProfiles() as T;
       }
+      if (endpoint === '/api/service-questions') {
+        const serviceTypeId = queryKey[1] as string;
+        return await supabaseStorage.getServiceQuestions(serviceTypeId) as T;
+      }
       if (endpoint === '/api/dashboard/metrics') {
         return await supabaseStorage.getDashboardMetrics() as T;
       }
