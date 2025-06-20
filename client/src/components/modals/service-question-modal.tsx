@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,6 @@ import {
 } from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { supabaseStorage } from "@/lib/supabase-client";
-import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,10 +29,13 @@ interface ServiceQuestionModalProps {
   onClose: () => void;
 }
 
-const formSchema = insertServiceQuestionSchema.omit({ parentQuestionId: true }).extend({
+const formSchema = z.object({
+  serviceTypeId: z.string().min(1, "Service type is required"),
+  question: z.string().min(1, "Question is required"),
+  questionType: z.string().min(1, "Question type is required"),
   isRequired: z.boolean().default(true),
-  isActive: z.boolean().default(true),
   displayOrder: z.number().default(0),
+  isActive: z.boolean().default(true),
   options: z.string().optional(),
 });
 
@@ -58,8 +61,6 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
     enabled: isOpen,
   });
 
-
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -68,7 +69,6 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
       questionType: "text",
       isRequired: true,
       displayOrder: 0,
-      parentQuestionId: undefined,
       isActive: true,
       options: "",
     },
@@ -85,7 +85,6 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
         questionType: question.questionType || "text",
         isRequired: question.isRequired ?? true,
         displayOrder: question.displayOrder || 0,
-
         isActive: question.isActive ?? true,
         options: newOptionsText,
       });
@@ -97,7 +96,6 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
         questionType: "text",
         isRequired: true,
         displayOrder: 0,
-  
         isActive: true,
         options: "",
       });
@@ -107,9 +105,9 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
   const selectedQuestionType = form.watch("questionType");
 
   const mutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
       // Process options based on question type
-      let processedData = { ...data };
+      let processedData: any = { ...data };
       
       // Set parentQuestionId to null since we removed this functionality
       processedData.parentQuestionId = null;
@@ -331,8 +329,6 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
               />
             )}
 
-
-
             <FormField
               control={form.control}
               name="displayOrder"
@@ -379,9 +375,9 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                   <div className="space-y-0.5">
-                    <FormLabel>Active Status</FormLabel>
+                    <FormLabel>Active</FormLabel>
                     <div className="text-sm text-gray-500">
-                      Enable this question for customers
+                      Show this question to users
                     </div>
                   </div>
                   <FormControl>
@@ -395,23 +391,11 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
             />
 
             <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={mutation.isPending}
-              >
+              <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending}
-                className="bg-primary-custom hover:bg-blue-700"
-              >
-                {mutation.isPending 
-                  ? (isEditing ? "Updating..." : "Creating...") 
-                  : (isEditing ? "Update" : "Create")
-                }
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? "Saving..." : isEditing ? "Update" : "Create"}
               </Button>
             </div>
           </form>
