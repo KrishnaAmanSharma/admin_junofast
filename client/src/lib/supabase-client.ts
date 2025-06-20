@@ -99,6 +99,104 @@ export const supabaseStorage = {
     if (error) throw error;
   },
 
+  async getCommonItems(serviceTypeId?: string) {
+    let query = supabase
+      .from('common_items')
+      .select('*')
+      .order('name');
+
+    if (serviceTypeId && serviceTypeId !== 'all') {
+      query = query.eq('service_type_id', serviceTypeId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    // Transform data to match expected schema
+    return data?.map(item => ({
+      id: item.id,
+      serviceTypeId: item.service_type_id,
+      name: item.name,
+      description: item.description,
+      imageUrl: item.image_url,
+      isActive: item.is_active,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at
+    })) || [];
+  },
+
+  async createCommonItem(item: any) {
+    // Transform camelCase to snake_case for database
+    const dbItem = {
+      service_type_id: item.serviceTypeId,
+      name: item.name,
+      description: item.description,
+      image_url: item.imageUrl,
+      is_active: item.isActive ?? true,
+    };
+
+    const { data, error } = await supabase
+      .from('common_items')
+      .insert([dbItem])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Transform back to camelCase
+    return {
+      id: data.id,
+      serviceTypeId: data.service_type_id,
+      name: data.name,
+      description: data.description,
+      imageUrl: data.image_url,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async updateCommonItem(id: string, updates: any) {
+    // Transform camelCase to snake_case for database
+    const dbUpdates: any = {};
+    if (updates.serviceTypeId !== undefined) dbUpdates.service_type_id = updates.serviceTypeId;
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.description !== undefined) dbUpdates.description = updates.description;
+    if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
+    if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
+    dbUpdates.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('common_items')
+      .update(dbUpdates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Transform back to camelCase
+    return {
+      id: data.id,
+      serviceTypeId: data.service_type_id,
+      name: data.name,
+      description: data.description,
+      imageUrl: data.image_url,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async deleteCommonItem(id: string) {
+    const { error } = await supabase
+      .from('common_items')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
   async getOrders(filters?: { status?: string; serviceType?: string; limit?: number }) {
     let query = supabase
       .from('orders')

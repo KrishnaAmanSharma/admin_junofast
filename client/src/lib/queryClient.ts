@@ -37,6 +37,9 @@ export const getQueryFn: <T>(options: {
       if (endpoint === '/api/service-types') {
         return await supabaseStorage.getServiceTypes() as T;
       }
+      if (endpoint === '/api/common-items') {
+        return await supabaseStorage.getCommonItems() as T;
+      }
       if (endpoint === '/api/orders') {
         return await supabaseStorage.getOrders() as T;
       }

@@ -107,7 +107,7 @@ export default function CommonItems() {
                     <SelectValue placeholder="All Service Types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Service Types</SelectItem>
+                    <SelectItem value="all">All Service Types</SelectItem>
                     {serviceTypes?.map((service) => (
                       <SelectItem key={service.id} value={service.id}>
                         {service.name}
