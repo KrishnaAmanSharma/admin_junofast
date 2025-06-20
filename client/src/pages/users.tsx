@@ -22,8 +22,7 @@ export default function Users() {
     queryKey: ["/api/profiles", { search: searchTerm }],
   });
 
-  // Debug logging
-  console.log("Profiles data:", profiles);
+
 
   const handleSearch = () => {
     // Search is handled by the query key dependency

@@ -309,9 +309,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const supabase = createClient(supabaseUrl, supabaseKey);
       
-      // Map frontend field names to database field names
+      // Map frontend field names to database field names (excluding email)
       const updates = {
-        email: req.body.email,
         full_name: req.body.fullName,
         phone_number: req.body.phoneNumber,
         avatar_url: req.body.avatarUrl,

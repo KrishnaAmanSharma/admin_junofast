@@ -115,12 +115,9 @@ export function UserDetailModal({ user, isOpen, onClose }: UserDetailModalProps)
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end">
             <Button variant="outline" onClick={onClose}>
               Close
-            </Button>
-            <Button className="bg-primary-custom hover:bg-blue-700">
-              Edit User
             </Button>
           </div>
         </div>

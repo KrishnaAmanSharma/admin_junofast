@@ -15,7 +15,6 @@ import type { Profile } from "@shared/schema";
 
 const editUserSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
-  email: z.string().email("Invalid email address"),
   phoneNumber: z.string().optional(),
   avatarUrl: z.string().url().optional().or(z.literal("")),
 });
@@ -35,7 +34,6 @@ export function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
     resolver: zodResolver(editUserSchema),
     defaultValues: {
       fullName: "",
-      email: "",
       phoneNumber: "",
       avatarUrl: "",
     },
@@ -46,7 +44,6 @@ export function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
     if (user) {
       form.reset({
         fullName: user.fullName || "",
-        email: user.email || "",
         phoneNumber: user.phoneNumber || "",
         avatarUrl: user.avatarUrl || "",
       });
@@ -130,19 +127,13 @@ export function EditUserModal({ user, isOpen, onClose }: EditUserModalProps) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Address *</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="Enter email address" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Email Display (Read-only) */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Email Address</Label>
+              <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                {user?.email}
+              </div>
+            </div>
 
             <FormField
               control={form.control}
