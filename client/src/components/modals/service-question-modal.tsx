@@ -88,7 +88,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
         questionType: question.questionType || "text",
         isRequired: question.isRequired ?? true,
         displayOrder: question.displayOrder || 0,
-        parentQuestionId: question.parentQuestionId || undefined,
+        parentQuestionId: question.parentQuestionId || "none",
         isActive: question.isActive ?? true,
         options: newOptionsText,
       });
@@ -100,7 +100,7 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
         questionType: "text",
         isRequired: true,
         displayOrder: 0,
-        parentQuestionId: undefined,
+        parentQuestionId: "none",
         isActive: true,
         options: "",
       });
@@ -155,7 +155,12 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    mutation.mutate(data);
+    // Convert "none" to null for parentQuestionId
+    const processedData = {
+      ...data,
+      parentQuestionId: data.parentQuestionId === "none" ? null : data.parentQuestionId
+    };
+    mutation.mutate(processedData);
   };
 
   const handleClose = () => {
