@@ -86,9 +86,9 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
         } else if (Array.isArray(question.options)) {
           // Handle legacy array format
           if (question.questionType === "sub_questions") {
-            newOptionsText = question.options.map((opt: any) => opt.question || opt).join('\n');
+            newOptionsText = (question.options as any[]).map((opt: any) => opt.question || opt).join('\n');
           } else {
-            newOptionsText = question.options.join('\n');
+            newOptionsText = (question.options as string[]).join('\n');
           }
         }
       }
