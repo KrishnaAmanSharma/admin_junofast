@@ -111,22 +111,29 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
-      // Parse options if provided and question type supports it
+      // Process options based on question type
       let processedData = { ...data };
-      if (data.options && (data.questionType === "dropdown" || data.questionType === "sub_questions")) {
-        try {
-          processedData.options = JSON.parse(data.options);
-        } catch (error) {
-          throw new Error("Invalid JSON format in options field");
+      
+      if (data.questionType === "dropdown" || data.questionType === "sub_questions") {
+        if (data.options && data.options.trim()) {
+          try {
+            // Try to parse as JSON first
+            processedData.options = JSON.parse(data.options);
+          } catch (error) {
+            // If not valid JSON, treat as simple list (one option per line)
+            const lines = data.options.split('\n').filter((line: string) => line.trim());
+            if (data.questionType === "dropdown") {
+              processedData.options = lines;
+            } else {
+              // For sub_questions, create simple structure
+              processedData.options = lines.map((line: string) => ({ question: line.trim() }));
+            }
+          }
+        } else {
+          processedData.options = null;
         }
       } else {
         processedData.options = null;
-      }
-
-      // Remove the options string field before sending
-      delete processedData.options;
-      if (data.options && (data.questionType === "dropdown" || data.questionType === "sub_questions")) {
-        processedData.options = JSON.parse(data.options);
       }
 
       if (isEditing) {
@@ -260,16 +267,57 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
                 name="options"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Options {selectedQuestionType === "dropdown" ? "(for dropdown)" : "(JSON format)"}
-                    </FormLabel>
+                    <div className="flex items-center gap-2">
+                      <FormLabel>
+                        {selectedQuestionType === "dropdown" ? "Dropdown Options" : "Sub Questions"}
+                      </FormLabel>
+                      <div className="group relative">
+                        <Button type="button" variant="outline" size="sm" className="h-6 w-6 p-0">
+                          <span className="text-xs">?</span>
+                        </Button>
+                        <div className="absolute left-0 top-8 z-50 hidden group-hover:block w-80 p-3 bg-white border rounded-lg shadow-lg">
+                          <h4 className="font-medium mb-2">
+                            {selectedQuestionType === "dropdown" ? "How to add dropdown options:" : "How to add sub questions:"}
+                          </h4>
+                          <div className="text-sm text-gray-600 space-y-2">
+                            {selectedQuestionType === "dropdown" ? (
+                              <>
+                                <p><strong>Simple way:</strong> Write one option per line</p>
+                                <div className="bg-gray-50 p-2 rounded text-xs font-mono">
+                                  Small (1-2 rooms)<br/>
+                                  Medium (3-4 rooms)<br/>
+                                  Large (5+ rooms)
+                                </div>
+                                <p><strong>Advanced:</strong> Use JSON format</p>
+                                <div className="bg-gray-50 p-2 rounded text-xs font-mono">
+                                  ["Small (1-2 rooms)", "Medium (3-4 rooms)", "Large (5+ rooms)"]
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <p><strong>Simple way:</strong> Write one question per line</p>
+                                <div className="bg-gray-50 p-2 rounded text-xs font-mono">
+                                  How many bedrooms?<br/>
+                                  How many bathrooms?<br/>
+                                  Any fragile items?
+                                </div>
+                                <p><strong>Advanced:</strong> Use JSON format</p>
+                                <div className="bg-gray-50 p-2 rounded text-xs font-mono">
+                                  [{`{"question": "How many bedrooms?"}`}, {`{"question": "How many bathrooms?"}`}]
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <FormControl>
                       <Textarea 
                         placeholder={selectedQuestionType === "dropdown" 
-                          ? '["Option 1", "Option 2", "Option 3"]'
-                          : '{"key": "value"}'
+                          ? "Small (1-2 rooms)\nMedium (3-4 rooms)\nLarge (5+ rooms)"
+                          : "How many bedrooms?\nHow many bathrooms?\nAny fragile items?"
                         }
-                        className="min-h-[100px] font-mono text-sm"
+                        className="min-h-[120px]"
                         {...field}
                         value={optionsText}
                         onChange={(e) => {
@@ -280,8 +328,8 @@ export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuest
                     </FormControl>
                     <div className="text-xs text-gray-500">
                       {selectedQuestionType === "dropdown" 
-                        ? "Enter options as JSON array, e.g., [\"Option 1\", \"Option 2\"]"
-                        : "Enter options as valid JSON object"
+                        ? "Tip: Write one option per line (Simple) or use JSON format (Advanced)"
+                        : "Tip: Write one question per line (Simple) or use JSON format (Advanced)"
                       }
                     </div>
                     <FormMessage />
