@@ -13,7 +13,6 @@ import type { Profile } from "@shared/schema";
 
 export default function Users() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -57,42 +56,19 @@ export default function Users() {
           </Button>
         </div>
 
-        {/* Filters */}
+        {/* Search */}
         <Card className="shadow-sm">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="search" className="text-sm font-medium text-gray-700 mb-2">
-                  Search Users
-                </Label>
-                <Input
-                  id="search"
-                  placeholder="Search by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="dateFilter" className="text-sm font-medium text-gray-700 mb-2">
-                  Registration Date
-                </Label>
-                <Input
-                  id="dateFilter"
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                />
-              </div>
-              
-              <div className="flex items-end">
-                <Button 
-                  className="w-full bg-primary-custom hover:bg-blue-700"
-                  onClick={handleSearch}
-                >
-                  Search
-                </Button>
-              </div>
+            <div className="max-w-md">
+              <Label htmlFor="search" className="text-sm font-medium text-gray-700 mb-2">
+                Search Users
+              </Label>
+              <Input
+                id="search"
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>
