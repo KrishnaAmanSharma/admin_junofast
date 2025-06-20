@@ -6,12 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UsersTable } from "@/components/tables/users-table";
+import { UserDetailModal } from "@/components/modals/user-detail-modal";
+import { EditUserModal } from "@/components/modals/edit-user-modal";
 import { UserPlus } from "lucide-react";
 import type { Profile } from "@shared/schema";
 
 export default function Users() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const { data: profiles, isLoading } = useQuery<Profile[]>({
     queryKey: ["/api/profiles", { search: searchTerm }],
@@ -19,6 +24,22 @@ export default function Users() {
 
   const handleSearch = () => {
     // Search is handled by the query key dependency
+  };
+
+  const handleViewUser = (profile: Profile) => {
+    setSelectedUser(profile);
+    setIsViewModalOpen(true);
+  };
+
+  const handleEditUser = (profile: Profile) => {
+    setSelectedUser(profile);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseModals = () => {
+    setSelectedUser(null);
+    setIsViewModalOpen(false);
+    setIsEditModalOpen(false);
   };
 
   return (
@@ -81,9 +102,25 @@ export default function Users() {
             <UsersTable 
               profiles={profiles || []} 
               isLoading={isLoading}
+              onViewUser={handleViewUser}
+              onEditUser={handleEditUser}
             />
           </CardContent>
         </Card>
+
+        {/* User Detail Modal */}
+        <UserDetailModal
+          user={selectedUser}
+          isOpen={isViewModalOpen}
+          onClose={handleCloseModals}
+        />
+
+        {/* Edit User Modal */}
+        <EditUserModal
+          user={selectedUser}
+          isOpen={isEditModalOpen}
+          onClose={handleCloseModals}
+        />
       </div>
     </div>
   );
