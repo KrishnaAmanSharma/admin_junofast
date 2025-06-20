@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertServiceQuestionSchema } from "@shared/schema";
 import type { ServiceQuestion, InsertServiceQuestion, ServiceType } from "@shared/schema";
 import { z } from "zod";
-import { useState } from "react";
+import { Plus, X } from "lucide-react";
 
 interface ServiceQuestionModalProps {
   question: ServiceQuestion | null;
@@ -52,9 +52,8 @@ const questionTypes = [
 export function ServiceQuestionModal({ question, isOpen, onClose }: ServiceQuestionModalProps) {
   const { toast } = useToast();
   const isEditing = !!question;
-  const [optionsText, setOptionsText] = useState(
-    question?.options ? JSON.stringify(question.options, null, 2) : ""
-  );
+  const [dropdownOptions, setDropdownOptions] = useState<string[]>([]);
+  const [newOption, setNewOption] = useState("");
 
   const { data: serviceTypes } = useQuery<ServiceType[]>({
     queryKey: ["/api/service-types"],

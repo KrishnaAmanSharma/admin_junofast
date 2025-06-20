@@ -62,7 +62,7 @@ export const serviceQuestions = pgTable("service_questions", {
   isRequired: boolean("is_required").default(true),
   displayOrder: integer("display_order").default(0),
   options: jsonb("options"),
-  parentQuestionId: uuid("parent_question_id").references(() => serviceQuestions.id),
+  parentQuestionId: uuid("parent_question_id"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
@@ -94,11 +94,11 @@ export const customItems = pgTable("custom_items", {
 export const orderQuestionAnswers = pgTable("order_question_answers", {
   id: uuid("id").defaultRandom().primaryKey(),
   orderId: uuid("order_id").notNull().references(() => orders.id),
-  questionId: uuid("question_id").notNull().references(() => serviceQuestions.id),
+  questionId: uuid("question_id").notNull(),
   question: text("question").notNull(),
   answer: text("answer").notNull(),
   questionType: text("question_type").notNull(),
-  parentQuestionId: uuid("parent_question_id").references(() => serviceQuestions.id),
+  parentQuestionId: uuid("parent_question_id"),
   additionalData: jsonb("additional_data"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
