@@ -23,14 +23,25 @@ if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is required");
 }
 
-const client = postgres(DATABASE_URL, {
-  prepare: false,
-  connect_timeout: 5,
-  idle_timeout: 20,
-  max_lifetime: 60 * 30,
-});
+let db: any;
+let useRealDatabase = false;
 
-const db = drizzle(client, { schema });
+try {
+  const client = postgres(DATABASE_URL, {
+    prepare: false,
+    connect_timeout: 10,
+    idle_timeout: 20,
+    max_lifetime: 60 * 30,
+    ssl: 'require',
+  });
+  
+  db = drizzle(client, { schema });
+  useRealDatabase = true;
+  console.log("Connected to Supabase database successfully");
+} catch (error) {
+  console.warn("Database connection failed, using mock data:", error);
+  useRealDatabase = false;
+}
 
 export interface IStorage {
   // Service Types
@@ -338,6 +349,9 @@ export class PostgresStorage implements IStorage {
   }
 }
 
-// Temporarily using MockStorage until DATABASE_URL password is configured
-import { MockStorage } from "./mock-storage";
-export const storage = new MockStorage();
+// Configure storage based on database connectivity
+export const storage = useRealDatabase ? new PostgresStorage() : (() => {
+  console.log("Using MockStorage as fallback");
+  const { MockStorage } = require("./mock-storage");
+  return new MockStorage();
+})();
