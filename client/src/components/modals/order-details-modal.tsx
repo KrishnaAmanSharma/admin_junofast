@@ -142,15 +142,15 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 <div className="space-y-2 text-sm">
                   <p>
                     <span className="font-medium">Name:</span>{" "}
-                    <span>{orderDetails.profile?.fullName || "Unknown"}</span>
+                    <span>{orderDetails?.profile?.fullName || "Unknown"}</span>
                   </p>
                   <p>
                     <span className="font-medium">Email:</span>{" "}
-                    <span>{orderDetails.profile?.email || "Not available"}</span>
+                    <span>{orderDetails?.profile?.email || "Not available"}</span>
                   </p>
                   <p>
                     <span className="font-medium">Phone:</span>{" "}
-                    <span>{orderDetails.profile?.phoneNumber || "Not provided"}</span>
+                    <span>{orderDetails?.profile?.phoneNumber || "Not provided"}</span>
                   </p>
                 </div>
               </div>
@@ -160,20 +160,20 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 <div className="space-y-2 text-sm">
                   <p>
                     <span className="font-medium">Service:</span>{" "}
-                    <span>{orderDetails.order.serviceType}</span>
+                    <span>{orderDetails?.order?.serviceType || "Not specified"}</span>
                   </p>
                   <p>
                     <span className="font-medium">Status:</span>{" "}
-                    {getStatusBadge(orderDetails.order.status || "Pending")}
+                    {getStatusBadge(orderDetails?.order?.status || "Pending")}
                   </p>
                   <p>
                     <span className="font-medium">Current Price:</span>{" "}
-                    <span>{formatCurrency(orderDetails.order.approxPrice)}</span>
+                    <span>{formatCurrency(orderDetails?.order?.approxPrice)}</span>
                   </p>
                   <p>
                     <span className="font-medium">Created:</span>{" "}
                     <span>
-                      {orderDetails.order.createdAt 
+                      {orderDetails?.order?.createdAt 
                         ? new Date(orderDetails.order.createdAt).toLocaleDateString()
                         : "Unknown"
                       }
@@ -190,16 +190,16 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
               <div>
                 <h4 className="font-semibold text-admin-slate mb-3">Pickup Address</h4>
                 <p className="text-sm text-gray-600">
-                  {orderDetails.order.pickupAddress}<br />
-                  Pincode: {orderDetails.order.pickupPincode}
+                  {orderDetails?.order?.pickupAddress || "Not provided"}<br />
+                  Pincode: {orderDetails?.order?.pickupPincode || "Not provided"}
                 </p>
               </div>
               
               <div>
                 <h4 className="font-semibold text-admin-slate mb-3">Drop Address</h4>
                 <p className="text-sm text-gray-600">
-                  {orderDetails.order.dropAddress}<br />
-                  Pincode: {orderDetails.order.dropPincode}
+                  {orderDetails?.order?.dropAddress || "Not provided"}<br />
+                  Pincode: {orderDetails?.order?.dropPincode || "Not provided"}
                 </p>
               </div>
             </div>

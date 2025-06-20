@@ -91,12 +91,18 @@ export function OrdersTable({ orders, isLoading, onViewOrder }: OrdersTableProps
               <td className="py-4 px-6">
                 <div className="flex items-center">
                   <Avatar className="w-8 h-8 mr-3">
-                    <AvatarImage src="https://images.unsplash.com/photo-1494790108755-2616b612b739?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40" />
-                    <AvatarFallback>U</AvatarFallback>
+                    <AvatarImage src={(order as any).profile?.avatarUrl || ""} />
+                    <AvatarFallback>
+                      {(order as any).profile?.fullName?.charAt(0) || "U"}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium text-admin-slate">Customer</div>
-                    <div className="text-sm text-gray-500">customer@example.com</div>
+                    <div className="font-medium text-admin-slate">
+                      {(order as any).profile?.fullName || "Unknown Customer"}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {(order as any).profile?.email || "No email provided"}
+                    </div>
                   </div>
                 </div>
               </td>
