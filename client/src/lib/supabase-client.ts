@@ -315,16 +315,7 @@ export const supabaseStorage = {
   async getOrders(filters?: { status?: string; serviceType?: string; limit?: number }) {
     let query = supabase
       .from('orders')
-      .select(`
-        *,
-        profiles:user_id (
-          id,
-          email,
-          full_name,
-          phone_number,
-          avatar_url
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (filters?.status && filters.status !== 'All Status') {
@@ -337,30 +328,51 @@ export const supabaseStorage = {
       query = query.limit(filters.limit);
     }
 
-    const { data, error } = await query;
+    const { data: orders, error } = await query;
     if (error) throw error;
     
-    // Map database field names to frontend field names
-    return (data || []).map(order => ({
-      ...order,
-      serviceType: order.service_type,
-      pickupAddress: order.pickup_address,
-      pickupPincode: order.pickup_pincode,
-      pickupLatitude: order.pickup_latitude,
-      pickupLongitude: order.pickup_longitude,
-      dropAddress: order.drop_address,
-      dropPincode: order.drop_pincode,
-      approxPrice: order.approx_price,
-      createdAt: order.created_at,
-      updatedAt: order.updated_at,
-      userId: order.user_id,
-      profile: order.profiles ? {
-        ...order.profiles,
-        fullName: order.profiles.full_name,
-        phoneNumber: order.profiles.phone_number,
-        avatarUrl: order.profiles.avatar_url
-      } : null
-    }));
+    // Get unique user IDs from orders
+    const allUserIds = orders?.map(order => order.user_id).filter(Boolean) || [];
+    const userIds = allUserIds.filter((id, index) => allUserIds.indexOf(id) === index);
+    
+    // Fetch profile data separately
+    let profiles = [];
+    if (userIds.length > 0) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+      
+      if (!profileError) {
+        profiles = profileData || [];
+      }
+    }
+    
+    // Map database field names to frontend field names and attach profiles
+    return (orders || []).map(order => {
+      const profile = profiles.find(p => p.id === order.user_id);
+      
+      return {
+        ...order,
+        serviceType: order.service_type,
+        pickupAddress: order.pickup_address,
+        pickupPincode: order.pickup_pincode,
+        pickupLatitude: order.pickup_latitude,
+        pickupLongitude: order.pickup_longitude,
+        dropAddress: order.drop_address,
+        dropPincode: order.drop_pincode,
+        approxPrice: order.approx_price,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at,
+        userId: order.user_id,
+        profile: profile ? {
+          ...profile,
+          fullName: profile.full_name,
+          phoneNumber: profile.phone_number,
+          avatarUrl: profile.avatar_url
+        } : null
+      };
+    });
   },
 
   async updateOrder(id: string, updates: any) {
@@ -379,19 +391,29 @@ export const supabaseStorage = {
       .from('orders')
       .update(dbUpdates)
       .eq('id', id)
-      .select(`
-        *,
-        profiles:user_id (
-          id,
-          email,
-          full_name,
-          phone_number,
-          avatar_url
-        )
-      `)
+      .select('*')
       .single();
     
     if (error) throw error;
+    
+    // Get profile data if user_id exists
+    let profile = null;
+    if (data.user_id) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user_id)
+        .single();
+      
+      if (!profileError && profileData) {
+        profile = {
+          ...profileData,
+          fullName: profileData.full_name,
+          phoneNumber: profileData.phone_number,
+          avatarUrl: profileData.avatar_url
+        };
+      }
+    }
     
     // Map response back to frontend field names
     return {
@@ -407,12 +429,7 @@ export const supabaseStorage = {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       userId: data.user_id,
-      profile: data.profiles ? {
-        ...data.profiles,
-        fullName: data.profiles.full_name,
-        phoneNumber: data.profiles.phone_number,
-        avatarUrl: data.profiles.avatar_url
-      } : null
+      profile
     };
   },
 
@@ -475,44 +492,56 @@ export const supabaseStorage = {
   },
 
   async getRecentOrdersRequiringAttention() {
-    const { data, error } = await supabase
+    const { data: orders, error } = await supabase
       .from('orders')
-      .select(`
-        *,
-        profiles:user_id (
-          id,
-          email,
-          full_name,
-          phone_number,
-          avatar_url
-        )
-      `)
+      .select('*')
       .eq('status', 'Pending')
       .order('created_at', { ascending: false })
       .limit(5);
 
     if (error) throw error;
     
-    // Map database field names to frontend field names
-    return (data || []).map(order => ({
-      ...order,
-      serviceType: order.service_type,
-      pickupAddress: order.pickup_address,
-      pickupPincode: order.pickup_pincode,
-      pickupLatitude: order.pickup_latitude,
-      pickupLongitude: order.pickup_longitude,
-      dropAddress: order.drop_address,
-      dropPincode: order.drop_pincode,
-      approxPrice: order.approx_price,
-      createdAt: order.created_at,
-      updatedAt: order.updated_at,
-      userId: order.user_id,
-      profile: order.profiles ? {
-        ...order.profiles,
-        fullName: order.profiles.full_name,
-        phoneNumber: order.profiles.phone_number,
-        avatarUrl: order.profiles.avatar_url
-      } : null
-    }));
+    // Get unique user IDs from orders
+    const allUserIds = orders?.map(order => order.user_id).filter(Boolean) || [];
+    const userIds = allUserIds.filter((id, index) => allUserIds.indexOf(id) === index);
+    
+    // Fetch profile data separately
+    let profiles = [];
+    if (userIds.length > 0) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+      
+      if (!profileError) {
+        profiles = profileData || [];
+      }
+    }
+    
+    // Map database field names to frontend field names and attach profiles
+    return (orders || []).map(order => {
+      const profile = profiles.find(p => p.id === order.user_id);
+      
+      return {
+        ...order,
+        serviceType: order.service_type,
+        pickupAddress: order.pickup_address,
+        pickupPincode: order.pickup_pincode,
+        pickupLatitude: order.pickup_latitude,
+        pickupLongitude: order.pickup_longitude,
+        dropAddress: order.drop_address,
+        dropPincode: order.drop_pincode,
+        approxPrice: order.approx_price,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at,
+        userId: order.user_id,
+        profile: profile ? {
+          ...profile,
+          fullName: profile.full_name,
+          phoneNumber: profile.phone_number,
+          avatarUrl: profile.avatar_url
+        } : null
+      };
+    });
   }
 };
