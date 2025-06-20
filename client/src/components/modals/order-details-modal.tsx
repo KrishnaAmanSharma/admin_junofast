@@ -205,7 +205,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
             </div>
 
             {/* Common Items */}
-            {orderDetails.commonItems && orderDetails.commonItems.length > 0 && (
+            {orderDetails?.commonItems && orderDetails.commonItems.length > 0 && (
               <>
                 <Separator />
                 <div>
