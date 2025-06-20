@@ -543,5 +543,124 @@ export const supabaseStorage = {
         } : null
       };
     });
+  },
+
+  async getOrderDetails(orderId: string) {
+    // Fetch the main order
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError) throw orderError;
+
+    // Fetch user profile
+    let profile = null;
+    if (order.user_id) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', order.user_id)
+        .single();
+      
+      if (!profileError && profileData) {
+        profile = {
+          ...profileData,
+          fullName: profileData.full_name,
+          phoneNumber: profileData.phone_number,
+          avatarUrl: profileData.avatar_url
+        };
+      }
+    }
+
+    // Fetch common items in orders
+    const { data: commonItemsData, error: commonItemsError } = await supabase
+      .from('common_items_in_orders')
+      .select('*')
+      .eq('order_id', orderId);
+
+    // Fetch custom items
+    const { data: customItemsData, error: customItemsError } = await supabase
+      .from('custom_items')
+      .select('*')
+      .eq('order_id', orderId);
+
+    // Fetch item photos for custom items
+    let itemPhotos = [];
+    if (customItemsData && customItemsData.length > 0) {
+      const customItemIds = customItemsData.map(item => item.id);
+      const { data: photosData, error: photosError } = await supabase
+        .from('item_photos')
+        .select('*')
+        .in('custom_item_id', customItemIds);
+      
+      if (!photosError) {
+        itemPhotos = photosData || [];
+      }
+    }
+
+    // Fetch order question answers
+    const { data: questionAnswersData, error: questionAnswersError } = await supabase
+      .from('order_question_answers')
+      .select('*')
+      .eq('order_id', orderId);
+
+    // Fetch order details
+    const { data: orderDetailsData, error: orderDetailsError } = await supabase
+      .from('order_details')
+      .select('*')
+      .eq('order_id', orderId);
+
+    // Map order with proper field names
+    const mappedOrder = {
+      ...order,
+      serviceType: order.service_type,
+      pickupAddress: order.pickup_address,
+      pickupPincode: order.pickup_pincode,
+      pickupLatitude: order.pickup_latitude,
+      pickupLongitude: order.pickup_longitude,
+      dropAddress: order.drop_address,
+      dropPincode: order.drop_pincode,
+      approxPrice: order.approx_price,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+      userId: order.user_id
+    };
+
+    // Map custom items with their photos
+    const mappedCustomItems = (customItemsData || []).map(item => ({
+      ...item,
+      createdAt: item.created_at,
+      photos: itemPhotos.filter(photo => photo.custom_item_id === item.id).map(photo => ({
+        ...photo,
+        photoUrl: photo.photo_url,
+        createdAt: photo.created_at
+      }))
+    }));
+
+    // Map question answers
+    const mappedQuestionAnswers = (questionAnswersData || []).map(qa => ({
+      ...qa,
+      questionType: qa.question_type,
+      parentQuestionId: qa.parent_question_id,
+      additionalData: qa.additional_data,
+      createdAt: qa.created_at
+    }));
+
+    // Map order details
+    const mappedOrderDetails = (orderDetailsData || []).map(detail => ({
+      ...detail,
+      createdAt: detail.created_at
+    }));
+
+    return {
+      order: mappedOrder,
+      profile,
+      commonItems: commonItemsData || [],
+      customItems: mappedCustomItems,
+      questionAnswers: mappedQuestionAnswers,
+      orderDetails: mappedOrderDetails
+    };
   }
 };

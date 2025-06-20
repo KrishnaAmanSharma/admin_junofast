@@ -23,6 +23,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   const { data: orderDetails, isLoading } = useQuery({
     queryKey: ["/api/orders", orderId],
     enabled: isOpen && !!orderId,
+    queryFn: async () => {
+      const response = await fetch(`/api/orders/${orderId}`);
+      if (!response.ok) throw new Error('Failed to fetch order details');
+      return response.json();
+    }
   });
 
   const updatePriceMutation = useMutation({
@@ -238,13 +243,13 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
             )}
 
             {/* Custom Items */}
-            {orderDetails.customItems && orderDetails.customItems.length > 0 && (
+            {orderDetails?.customItems && orderDetails.customItems.length > 0 && (
               <>
                 <Separator />
                 <div>
                   <h4 className="font-semibold text-admin-slate mb-3">Custom Items</h4>
                   <div className="space-y-2">
-                    {orderDetails.customItems.map((item) => (
+                    {orderDetails?.customItems?.map((item: any) => (
                       <div key={item.id} className="p-3 bg-gray-50 rounded-lg">
                         <div className="flex justify-between items-start">
                           <div>
@@ -261,13 +266,13 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
             )}
 
             {/* Question Answers */}
-            {orderDetails.questionAnswers && orderDetails.questionAnswers.length > 0 && (
+            {orderDetails?.questionAnswers && orderDetails.questionAnswers.length > 0 && (
               <>
                 <Separator />
                 <div>
                   <h4 className="font-semibold text-admin-slate mb-3">Service Questions</h4>
                   <div className="space-y-3">
-                    {orderDetails.questionAnswers.map((qa) => (
+                    {orderDetails?.questionAnswers?.map((qa: any) => (
                       <div key={qa.id} className="p-3 bg-gray-50 rounded-lg">
                         <p className="font-medium text-admin-slate mb-1">{qa.question}</p>
                         <p className="text-sm text-gray-600">
