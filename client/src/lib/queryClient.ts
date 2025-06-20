@@ -45,7 +45,8 @@ export const getQueryFn: <T>(options: {
         return await supabaseStorage.getOrders() as T;
       }
       if (endpoint === '/api/profiles') {
-        return await supabaseStorage.getProfiles() as T;
+        const params = queryKey[1] as { search?: string };
+        return await supabaseStorage.getProfiles(params?.search) as T;
       }
       if (endpoint === '/api/service-questions') {
         const serviceTypeId = queryKey[1] as string;
