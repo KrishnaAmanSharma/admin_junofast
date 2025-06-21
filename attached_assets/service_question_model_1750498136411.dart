@@ -1,0 +1,181 @@
+import 'package:flutter/material.dart';
+
+enum QuestionType {
+  text,
+  number,
+  date,
+  boolean,
+  dropdown,
+  addItems,
+  subQuestions;
+  
+  static QuestionType fromString(String type) {
+    switch (type.toLowerCase()) {
+      case 'text':
+        return QuestionType.text;
+      case 'number':
+        return QuestionType.number;
+      case 'date':
+        return QuestionType.date;
+      case 'boolean':
+        return QuestionType.boolean;
+      case 'dropdown':
+        return QuestionType.dropdown;
+      case 'add_items':
+        return QuestionType.addItems;
+      case 'sub_questions':
+        return QuestionType.subQuestions;
+      default:
+        return QuestionType.text;
+    }
+  }
+  
+  String toDisplayString() {
+    switch (this) {
+      case QuestionType.text:
+        return 'Text';
+      case QuestionType.number:
+        return 'Number';
+      case QuestionType.date:
+        return 'Date';
+      case QuestionType.boolean:
+        return 'Yes/No';
+      case QuestionType.dropdown:
+        return 'Dropdown';
+      case QuestionType.addItems:
+        return 'Add Items';
+      case QuestionType.subQuestions:
+        return 'Sub Questions';
+    }
+  }
+}
+
+class ServiceQuestionModel {
+  final String id;
+  final String serviceTypeId;
+  final String question;
+  final String questionType;
+  final bool isRequired;
+  final int displayOrder;
+  final List<String>? options; // For dropdown type
+  final List<ServiceQuestionModel>? subQuestions; // For sub_questions type
+  final bool isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  
+  // UI-only fields
+  dynamic answer; // To store user's answer
+  List<Map<String, dynamic>>? addedItems; // For add_items type
+
+  ServiceQuestionModel({
+    required this.id,
+    required this.serviceTypeId,
+    required this.question,
+    required this.questionType,
+    required this.isRequired,
+    required this.displayOrder,
+    this.options,
+    this.subQuestions,
+    this.isActive = true,
+    this.createdAt,
+    this.updatedAt,
+    this.answer,
+    this.addedItems,
+  });
+
+  factory ServiceQuestionModel.fromJson(Map<String, dynamic> json) {
+    // Process sub-questions if available
+    List<ServiceQuestionModel>? subQuestions;
+    if (json['sub_questions'] != null) {
+      subQuestions = List<ServiceQuestionModel>.from(
+        (json['sub_questions'] as List).map(
+          (item) => ServiceQuestionModel.fromJson(item),
+        ),
+      );
+    }
+
+    // Process options if available
+    List<String>? options;
+    if (json['options'] != null) {
+      options = List<String>.from(json['options']);
+    }
+
+    return ServiceQuestionModel(
+      id: json['id'] ?? '',
+      serviceTypeId: json['service_type_id'] ?? '',
+      question: json['question'] ?? '',
+      questionType: json['question_type'] ?? 'text',
+      isRequired: json['is_required'] ?? false,
+      displayOrder: json['display_order'] ?? 0,
+      options: options,
+      subQuestions: subQuestions,
+      isActive: json['is_active'] ?? true,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'service_type_id': serviceTypeId,
+      'question': question,
+      'question_type': questionType,
+      'is_required': isRequired,
+      'display_order': displayOrder,
+      'options': options,
+      'sub_questions': subQuestions?.map((q) => q.toJson()).toList(),
+      'is_active': isActive,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+
+  // Convert to a map format suitable for order creation
+  Map<String, dynamic> toOrderQuestionJson() {
+    return {
+      'question_id': id,
+      'question': question,
+      'answer': answer?.toString() ?? '',
+      'question_type': questionType,
+    };
+  }
+
+  QuestionType get type => QuestionType.fromString(questionType);
+
+  ServiceQuestionModel copyWith({
+    String? id,
+    String? serviceTypeId,
+    String? question,
+    String? questionType,
+    bool? isRequired,
+    int? displayOrder,
+    List<String>? options,
+    List<ServiceQuestionModel>? subQuestions,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    dynamic answer,
+    List<Map<String, dynamic>>? addedItems,
+  }) {
+    return ServiceQuestionModel(
+      id: id ?? this.id,
+      serviceTypeId: serviceTypeId ?? this.serviceTypeId,
+      question: question ?? this.question,
+      questionType: questionType ?? this.questionType,
+      isRequired: isRequired ?? this.isRequired,
+      displayOrder: displayOrder ?? this.displayOrder,
+      options: options ?? this.options,
+      subQuestions: subQuestions ?? this.subQuestions,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      answer: answer ?? this.answer,
+      addedItems: addedItems ?? this.addedItems,
+    );
+  }
+}
