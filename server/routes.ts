@@ -268,13 +268,79 @@ export async function registerRoutes(app: Express) {
 
   app.put("/api/orders/:id", async (req, res) => {
     try {
-      const validatedData = updateOrderSchema.parse({ ...req.body, id: req.params.id });
-      const order = await storage.updateOrder(req.params.id, validatedData);
-      res.json(order);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      console.log('Updating order:', id, 'with data:', updateData);
+      
+      // Map frontend field names to database field names
+      const dbUpdateData: Record<string, any> = {};
+      if (updateData.approxPrice !== undefined) {
+        dbUpdateData['approx_price'] = updateData.approxPrice;
       }
+      if (updateData.status !== undefined) {
+        dbUpdateData['status'] = updateData.status;
+      }
+      if (updateData.finalPrice !== undefined) {
+        dbUpdateData['final_price'] = updateData.finalPrice;
+      }
+      if (updateData.estimatedPrice !== undefined) {
+        dbUpdateData['estimated_price'] = updateData.estimatedPrice;
+      }
+      if (updateData.notes !== undefined) {
+        dbUpdateData['notes'] = updateData.notes;
+      }
+      
+      console.log('Mapped database update data:', dbUpdateData);
+      
+      // Update the order using Supabase client
+      const { data: updatedOrder, error } = await supabase
+        .from('orders')
+        .update(dbUpdateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Order update error:', error);
+        return res.status(500).json({ error: error.message });
+      }
+      
+      if (!updatedOrder) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      // Map the response to match frontend expectations
+      const mappedOrder = {
+        ...updatedOrder,
+        serviceType: updatedOrder.service_type,
+        pickupAddress: updatedOrder.pickup_address,
+        pickupPincode: updatedOrder.pickup_pincode,
+        pickupLatitude: updatedOrder.pickup_latitude,
+        pickupLongitude: updatedOrder.pickup_longitude,
+        dropAddress: updatedOrder.drop_address,
+        dropPincode: updatedOrder.drop_pincode,
+        dropLatitude: updatedOrder.drop_latitude,
+        dropLongitude: updatedOrder.drop_longitude,
+        estimatedPrice: updatedOrder.estimated_price,
+        finalPrice: updatedOrder.final_price,
+        scheduledDate: updatedOrder.scheduled_date,
+        completedDate: updatedOrder.completed_date,
+        approxPrice: updatedOrder.approx_price,
+        createdAt: updatedOrder.created_at,
+        updatedAt: updatedOrder.updated_at,
+        userId: updatedOrder.user_id,
+      };
+      
+      console.log(`Successfully updated order ${id}`);
+      res.json(mappedOrder);
+    } catch (error) {
+      console.error('Order update error:', error);
       res.status(500).json({ error: "Failed to update order" });
     }
   });
