@@ -264,7 +264,7 @@ export class PostgresStorage implements IStorage {
     questionAnswers: OrderQuestionAnswer[];
     orderDetails: any[];
   }> {
-    // Use Supabase client directly with the same nested query as Flutter app
+    // Use the same logic as the working routes.ts implementation
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL!,
@@ -272,179 +272,141 @@ export class PostgresStorage implements IStorage {
     );
 
     try {
-      // First, let's test if the order exists at all
-      const { data: basicOrder, error: basicError } = await supabase
+      // Fetch the main order
+      const { data: order, error: orderError } = await supabase
         .from('orders')
         .select('*')
         .eq('id', id)
         .single();
 
-      console.log('Basic order query error:', basicError);
-      console.log('Basic order found:', !!basicOrder);
+      if (orderError) throw orderError;
 
-      if (basicError || !basicOrder) {
-        throw new Error(`Order not found: ${basicError?.message}`);
+      // Fetch user profile
+      let profile = null;
+      if (order.user_id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', order.user_id)
+          .single();
+        
+        if (!profileError && profileData) {
+          profile = {
+            ...profileData,
+            fullName: profileData.full_name,
+            phoneNumber: profileData.phone_number,
+            avatarUrl: profileData.avatar_url
+          };
+        }
       }
 
-      // Now let's try each related table separately to see what exists
-      const { data: orderDetailsData, error: detailsError } = await supabase
-        .from('order_details')
+      // Fetch common items in orders
+      const { data: commonItemsData } = await supabase
+        .from('common_items_in_orders')
         .select('*')
         .eq('order_id', id);
 
-      const { data: commonItemsData, error: commonError } = await supabase
-        .from('common_items_in_orders')
-        .select('*, common_items(*)')
-        .eq('order_id', id);
-
-      const { data: customItemsData, error: customError } = await supabase
+      // Fetch custom items
+      const { data: customItemsData } = await supabase
         .from('custom_items')
-        .select('*, item_photos(*)')
+        .select('*')
         .eq('order_id', id);
 
-      const { data: questionAnswersData, error: qaError } = await supabase
+      // Fetch item photos for custom items
+      let itemPhotos = [];
+      if (customItemsData && customItemsData.length > 0) {
+        const customItemIds = customItemsData.map(item => item.id);
+        const { data: photosData } = await supabase
+          .from('item_photos')
+          .select('*')
+          .in('custom_item_id', customItemIds);
+        
+        if (photosData) {
+          itemPhotos = photosData;
+        }
+      }
+
+      // Fetch order question answers
+      const { data: questionAnswersData } = await supabase
         .from('order_question_answers')
         .select('*')
         .eq('order_id', id);
 
-      // Check for any query errors
-      if (detailsError) console.log('Order details error:', detailsError);
-      if (commonError) console.log('Common items error:', commonError);
-      if (customError) console.log('Custom items error:', customError);
-      if (qaError) console.log('Question answers error:', qaError);
-
-      // Write debug output to a temporary file so we can see it
-      const fs = require('fs');
-      const debugInfo = {
-        orderId: id,
-        orderDetailsCount: orderDetailsData?.length || 0,
-        orderDetailsData: orderDetailsData,
-        commonItemsCount: commonItemsData?.length || 0,
-        commonItemsData: commonItemsData,
-        customItemsCount: customItemsData?.length || 0,
-        customItemsData: customItemsData,
-        questionAnswersCount: questionAnswersData?.length || 0,
-        questionAnswersData: questionAnswersData,
-        timestamp: new Date().toISOString()
-      };
-      
-      fs.writeFileSync('/tmp/debug-order-data.json', JSON.stringify(debugInfo, null, 2));
-      
-      console.log('DEBUG: Order data written to /tmp/debug-order-data.json');
-      console.log('COUNTS:', {
-        orderDetails: orderDetailsData?.length || 0,
-        commonItems: commonItemsData?.length || 0,
-        customItems: customItemsData?.length || 0,
-        questionAnswers: questionAnswersData?.length || 0
-      });
-
-      // Let's also check if ANY orders have related data
-      const { data: anyOrderDetails } = await supabase
+      // Fetch order details
+      const { data: orderDetailsData } = await supabase
         .from('order_details')
         .select('*')
-        .limit(5);
-      
-      const { data: anyCommonItems } = await supabase
-        .from('common_items_in_orders')
-        .select('*')
-        .limit(5);
+        .eq('order_id', id);
 
-      const { data: allOrders } = await supabase
-        .from('orders')
-        .select('id, service_type, created_at')
-        .order('created_at', { ascending: false })
-        .limit(10);
+      // Map order with proper field names (same as routes.ts)
+      const mappedOrder = {
+        ...order,
+        serviceType: order.service_type,
+        pickupAddress: order.pickup_address,
+        pickupPincode: order.pickup_pincode,
+        pickupLatitude: order.pickup_latitude,
+        pickupLongitude: order.pickup_longitude,
+        dropAddress: order.drop_address,
+        dropPincode: order.drop_pincode,
+        approxPrice: order.approx_price,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at,
+        userId: order.user_id
+      };
 
-      console.log('Database check - any order_details exist:', anyOrderDetails?.length || 0);
-      console.log('Database check - any common_items_in_orders exist:', anyCommonItems?.length || 0);
-      console.log('Recent orders in database:', allOrders?.map(o => ({ id: o.id.substring(0, 8), service: o.service_type })) || []);
+      // Process common items (same as routes.ts)
+      const commonItems = (commonItemsData || []).map(item => ({
+        id: item.id,
+        orderId: item.order_id,
+        itemId: item.item_id,
+        name: item.name,
+        description: item.description,
+        imageUrl: item.image_url,
+        quantity: item.quantity,
+        createdAt: item.created_at,
+      }));
 
-      // Use basic order as orderData
-      const orderData = basicOrder;
+      // Process custom items with photos (same as routes.ts)
+      const customItems = (customItemsData || []).map(item => ({
+        id: item.id,
+        orderId: item.order_id,
+        name: item.name,
+        description: item.description || '',
+        quantity: item.quantity || 1,
+        createdAt: item.created_at,
+        photos: itemPhotos.filter(photo => photo.custom_item_id === item.id).map(photo => ({
+          ...photo,
+          photoUrl: photo.photo_url,
+          createdAt: photo.created_at
+        }))
+      }));
 
-      // Process the data exactly like Flutter OrderModel.fromJson()
-      const order = orderData as Order;
+      // Process question answers (same as routes.ts)
+      const questionAnswers = (questionAnswersData || []).map(qa => ({
+        id: qa.id,
+        orderId: qa.order_id,
+        questionId: qa.question_id,
+        question: qa.question,
+        answer: qa.answer,
+        questionType: qa.question_type,
+        parentQuestionId: qa.parent_question_id,
+        additionalData: qa.additional_data,
+        createdAt: qa.created_at,
+      }));
 
-      // Get profile separately
-      let profile = null;
-      if (order.userId) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', order.userId)
-          .single();
-        profile = profileData;
-      }
-
-      // Process common items using separate query results
-      const commonItems: CommonItemInOrder[] = [];
-      if (commonItemsData && Array.isArray(commonItemsData)) {
-        for (const item of commonItemsData) {
-          const commonItem = item.common_items; // This is the nested common_items data
-          commonItems.push({
-            id: item.id,
-            orderId: item.order_id,
-            itemId: item.item_id,
-            name: item.name || (commonItem ? commonItem.name : ''),
-            description: item.description || (commonItem ? commonItem.description : ''),
-            imageUrl: item.image_url || (commonItem ? commonItem.image_url : ''),
-            quantity: item.quantity || 0,
-            createdAt: item.created_at,
-          });
-        }
-      }
-
-      // Process custom items using separate query results
-      const customItems: CustomItem[] = [];
-      if (customItemsData && Array.isArray(customItemsData)) {
-        for (const item of customItemsData) {
-          customItems.push({
-            id: item.id,
-            orderId: item.order_id,
-            name: item.name,
-            description: item.description || '',
-            quantity: item.quantity || 1,
-            createdAt: item.created_at,
-          });
-        }
-      }
-
-      // Process question answers using separate query results
-      const questionAnswers: OrderQuestionAnswer[] = [];
-      if (questionAnswersData && Array.isArray(questionAnswersData)) {
-        for (const answer of questionAnswersData) {
-          questionAnswers.push({
-            id: answer.id,
-            orderId: answer.order_id,
-            questionId: answer.question_id,
-            question: answer.question,
-            answer: answer.answer,
-            questionType: answer.question_type,
-            parentQuestionId: answer.parent_question_id,
-            additionalData: answer.additional_data,
-            createdAt: answer.created_at,
-          });
-        }
-      }
-
-      // Process order details using separate query results
-      const orderDetails: any[] = [];
-      if (orderDetailsData && Array.isArray(orderDetailsData)) {
-        for (const detail of orderDetailsData) {
-          orderDetails.push({
-            id: detail.id,
-            orderId: detail.order_id,
-            name: detail.name,
-            value: detail.value,
-            createdAt: detail.created_at,
-          });
-        }
-      }
+      // Process order details (same as routes.ts)
+      const orderDetails = (orderDetailsData || []).map(detail => ({
+        id: detail.id,
+        orderId: detail.order_id,
+        name: detail.name,
+        value: detail.value,
+        createdAt: detail.created_at,
+      }));
 
       console.log(`Order ${id}: Found ${orderDetails.length} details, ${commonItems.length} common items, ${customItems.length} custom items, ${questionAnswers.length} answers`);
 
       return {
-        order,
+        order: mappedOrder,
         profile,
         commonItems,
         customItems,
