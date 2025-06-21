@@ -28,6 +28,22 @@ export default function Orders() {
   const { data: orders, isLoading } = useQuery<Order[]>({
     queryKey: ["/api/orders", filters],
     enabled: true,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.status && filters.status !== '') {
+        params.append('status', filters.status);
+      }
+      if (filters.serviceType && filters.serviceType !== '') {
+        params.append('serviceType', filters.serviceType);
+      }
+      if (filters.dateRange && filters.dateRange !== '') {
+        params.append('dateRange', filters.dateRange);
+      }
+      
+      const response = await fetch(`/api/orders?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch orders');
+      return response.json();
+    }
   });
 
   const { data: serviceTypes } = useQuery<ServiceType[]>({

@@ -22,6 +22,7 @@ export async function registerRoutes(app: Express) {
       const filters = {
         status: req.query.status as string,
         serviceType: req.query.serviceType as string,
+        dateRange: req.query.dateRange as string,
         limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
       };
 
@@ -36,6 +37,11 @@ export async function registerRoutes(app: Express) {
 
       if (filters.serviceType && filters.serviceType !== 'All Services') {
         query = query.eq('service_type', filters.serviceType);
+      }
+
+      if (filters.dateRange && filters.dateRange !== '') {
+        // Filter orders created on or after the specified date
+        query = query.gte('created_at', filters.dateRange);
       }
 
       if (filters.limit) {
