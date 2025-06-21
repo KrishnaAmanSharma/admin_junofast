@@ -191,15 +191,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Orders Routes
   app.get("/api/orders", async (req, res) => {
     try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
       const filters = {
         status: req.query.status as string,
         serviceType: req.query.serviceType as string,
         limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
       };
-      const orders = await storage.getOrders(filters);
-      res.json(orders);
+
+      let query = supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (filters.status && filters.status !== 'All Status') {
+        query = query.eq('status', filters.status);
+      }
+
+      if (filters.serviceType && filters.serviceType !== 'All Services') {
+        query = query.eq('service_type', filters.serviceType);
+      }
+
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const { data: orders, error } = await query;
+      if (error) throw error;
+      
+      // Get unique user IDs from orders
+      const allUserIds = orders?.map(order => order.user_id).filter(Boolean) || [];
+      const userIds = allUserIds.filter((id, index) => allUserIds.indexOf(id) === index);
+      
+      // Fetch profile data separately
+      let profiles = [];
+      if (userIds.length > 0) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+        
+        if (!profileError) {
+          profiles = profileData || [];
+        }
+      }
+      
+      // Map database field names to frontend field names and attach profiles
+      const mappedOrders = (orders || []).map(order => {
+        const profile = profiles.find(p => p.id === order.user_id);
+        
+        return {
+          ...order,
+          serviceType: order.service_type,
+          pickupAddress: order.pickup_address,
+          pickupPincode: order.pickup_pincode,
+          pickupLatitude: order.pickup_latitude,
+          pickupLongitude: order.pickup_longitude,
+          dropAddress: order.drop_address,
+          dropPincode: order.drop_pincode,
+          approxPrice: order.approx_price,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
+          userId: order.user_id,
+          profile: profile ? {
+            ...profile,
+            fullName: profile.full_name,
+            phoneNumber: profile.phone_number,
+            avatarUrl: profile.avatar_url
+          } : null
+        };
+      });
+
+      res.json(mappedOrders);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch orders" });
+      console.error('Orders fetch error:', error);
+      res.status(500).json({ error: "Failed to fetch orders", details: error.message });
     }
   });
 
