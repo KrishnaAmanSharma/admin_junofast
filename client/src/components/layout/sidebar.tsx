@@ -24,7 +24,7 @@ export function Sidebar() {
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex-shrink-0">
       <div className="p-6 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-admin-slate">RelocationPro</h1>
+        <h1 className="text-xl font-bold text-admin-slate">Juno Fast</h1>
         <p className="text-sm text-gray-500">Admin Portal</p>
       </div>
       
