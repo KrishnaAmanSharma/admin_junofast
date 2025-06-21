@@ -19,6 +19,7 @@ import type { Order, ServiceType } from "@shared/schema";
 
 export default function Orders() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
     status: "",
     serviceType: "",
@@ -26,7 +27,7 @@ export default function Orders() {
   });
 
   const { data: orders, isLoading } = useQuery<Order[]>({
-    queryKey: ["/api/orders", filters],
+    queryKey: ["/api/orders", filters, searchTerm],
     enabled: true,
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -38,6 +39,9 @@ export default function Orders() {
       }
       if (filters.dateRange && filters.dateRange !== '') {
         params.append('dateRange', filters.dateRange);
+      }
+      if (searchTerm && searchTerm !== '') {
+        params.append('search', searchTerm);
       }
       
       const response = await fetch(`/api/orders?${params.toString()}`);
@@ -72,9 +76,24 @@ export default function Orders() {
           </Button>
         </div>
 
-        {/* Filters */}
+        {/* Search and Filters */}
         <Card className="shadow-sm">
           <CardContent className="p-6">
+            {/* Search Bar */}
+            <div className="mb-6">
+              <Label htmlFor="search" className="text-sm font-medium text-gray-700 mb-2">
+                Search Orders
+              </Label>
+              <Input
+                id="search"
+                type="text"
+                placeholder="Search by Order ID, Customer Name, Email, or Service Type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="status" className="text-sm font-medium text-gray-700 mb-2">

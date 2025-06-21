@@ -23,6 +23,7 @@ export async function registerRoutes(app: Express) {
         status: req.query.status as string,
         serviceType: req.query.serviceType as string,
         dateRange: req.query.dateRange as string,
+        search: req.query.search as string,
         limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
       };
 
@@ -69,7 +70,7 @@ export async function registerRoutes(app: Express) {
       }
       
       // Map database field names to frontend field names and attach profiles
-      const mappedOrders = (orders || []).map(order => {
+      let mappedOrders = (orders || []).map(order => {
         const profile = profiles.find(p => p.id === order.user_id);
         
         return {
@@ -102,6 +103,31 @@ export async function registerRoutes(app: Express) {
           } : null
         };
       });
+
+      // Apply search filter if provided
+      if (filters.search && filters.search.trim() !== '') {
+        const searchTerm = filters.search.toLowerCase().trim();
+        mappedOrders = mappedOrders.filter(order => {
+          // Search in order ID
+          if (order.id.toLowerCase().includes(searchTerm)) return true;
+          
+          // Search in service type
+          if (order.serviceType?.toLowerCase().includes(searchTerm)) return true;
+          
+          // Search in customer profile data
+          if (order.profile) {
+            if (order.profile.email?.toLowerCase().includes(searchTerm)) return true;
+            if (order.profile.fullName?.toLowerCase().includes(searchTerm)) return true;
+            if (order.profile.phoneNumber?.includes(searchTerm)) return true;
+          }
+          
+          // Search in addresses
+          if (order.pickupAddress?.toLowerCase().includes(searchTerm)) return true;
+          if (order.dropAddress?.toLowerCase().includes(searchTerm)) return true;
+          
+          return false;
+        });
+      }
 
       res.json(mappedOrders);
     } catch (error) {
