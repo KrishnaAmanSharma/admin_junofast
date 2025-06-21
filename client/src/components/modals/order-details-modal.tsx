@@ -77,12 +77,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     };
 
     return (
-      <Badge 
-        variant="secondary" 
-        className={statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800"}
+      <span 
+        className={`px-2 py-1 text-xs rounded ${statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800"}`}
       >
         {status}
-      </Badge>
+      </span>
     );
   };
 
@@ -109,6 +108,9 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
               <X className="h-4 w-4" />
             </Button>
           </div>
+          <DialogDescription>
+            Complete order information including items, questions, and delivery details
+          </DialogDescription>
         </DialogHeader>
 
         {isLoading || !orderDetails ? (
