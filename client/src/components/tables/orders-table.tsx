@@ -76,6 +76,7 @@ export function OrdersTable({ orders, isLoading, onViewOrder, onEditOrder }: Ord
           <tr>
             <th className="text-left py-3 px-6 font-medium text-gray-500">Order ID</th>
             <th className="text-left py-3 px-6 font-medium text-gray-500">Customer</th>
+            <th className="text-left py-3 px-6 font-medium text-gray-500">Contact</th>
             <th className="text-left py-3 px-6 font-medium text-gray-500">Service Type</th>
             <th className="text-left py-3 px-6 font-medium text-gray-500">Pickup Location</th>
             <th className="text-left py-3 px-6 font-medium text-gray-500">Status</th>
@@ -106,6 +107,9 @@ export function OrdersTable({ orders, isLoading, onViewOrder, onEditOrder }: Ord
                     </div>
                   </div>
                 </div>
+              </td>
+              <td className="py-4 px-6 text-admin-slate">
+                {(order as any).profile?.phoneNumber || "Not provided"}
               </td>
               <td className="py-4 px-6 text-admin-slate">{order.serviceType}</td>
               <td className="py-4 px-6 text-admin-slate">{order.pickupAddress}</td>
