@@ -286,6 +286,11 @@ export class PostgresStorage implements IStorage {
     const orderDetails = await db.select().from(schema.orderDetails)
       .where(eq(schema.orderDetails.orderId, id));
 
+    console.log(`Fetching order details for order ${id}, found ${orderDetails.length} details`);
+    if (orderDetails.length > 0) {
+      console.log('Order details sample:', orderDetails[0]);
+    }
+
     return {
       order,
       profile,
