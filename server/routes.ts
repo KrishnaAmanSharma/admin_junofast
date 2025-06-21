@@ -280,19 +280,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/orders/:id", async (req, res) => {
     try {
+      // Use your exact optimized SQL query that works in Supabase SQL editor
+      const postgres = require('postgres');
+      const sql = postgres(process.env.DATABASE_URL!);
+      
+      const optimizedResults = await sql`
+        SELECT
+          o.*,
+          -- Order details as JSON array
+          COALESCE(
+            (
+              SELECT json_agg(od)
+              FROM order_details od
+              WHERE od.order_id = o.id
+            ), '[]'::json
+          ) AS order_details,
+          -- Common items as JSON array
+          COALESCE(
+            (
+              SELECT json_agg(ci)
+              FROM common_items_in_orders ci
+              WHERE ci.order_id = o.id
+            ), '[]'::json
+          ) AS common_items,
+          -- Custom items as JSON array, including their photos
+          COALESCE(
+            (
+              SELECT json_agg(
+                jsonb_set(
+                  to_jsonb(cu),
+                  '{photos}',
+                  COALESCE(
+                    (
+                      SELECT json_agg(ip.photo_url)
+                      FROM item_photos ip
+                      WHERE ip.custom_item_id = cu.id
+                    )::jsonb,
+                    '[]'::jsonb
+                  )
+                )
+              )
+              FROM custom_items cu
+              WHERE cu.order_id = o.id
+            ), '[]'::json
+          ) AS custom_items,
+          -- Question answers as JSON array
+          COALESCE(
+            (
+              SELECT json_agg(qa)
+              FROM order_question_answers qa
+              WHERE qa.order_id = o.id
+            ), '[]'::json
+          ) AS question_answers
+        FROM orders o
+        WHERE o.id = ${req.params.id}
+      `;
+      
+      await sql.end();
+      
+      if (optimizedResults.length === 0) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      const orderData = optimizedResults[0];
+      
       const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
       const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
       
       const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      // Fetch the main order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', req.params.id)
-        .single();
-
-      if (orderError) throw orderError;
 
       // Fetch user profile
       let profile = null;
