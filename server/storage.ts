@@ -287,31 +287,56 @@ export class PostgresStorage implements IStorage {
       }
 
       // Now let's try each related table separately to see what exists
-      const { data: orderDetailsData } = await supabase
+      const { data: orderDetailsData, error: detailsError } = await supabase
         .from('order_details')
         .select('*')
         .eq('order_id', id);
 
-      const { data: commonItemsData } = await supabase
+      const { data: commonItemsData, error: commonError } = await supabase
         .from('common_items_in_orders')
         .select('*, common_items(*)')
         .eq('order_id', id);
 
-      const { data: customItemsData } = await supabase
+      const { data: customItemsData, error: customError } = await supabase
         .from('custom_items')
         .select('*, item_photos(*)')
         .eq('order_id', id);
 
-      const { data: questionAnswersData } = await supabase
+      const { data: questionAnswersData, error: qaError } = await supabase
         .from('order_question_answers')
         .select('*')
         .eq('order_id', id);
 
-      console.log('Separate queries results:');
-      console.log('- Order details:', orderDetailsData?.length || 0, orderDetailsData);
-      console.log('- Common items:', commonItemsData?.length || 0, commonItemsData);
-      console.log('- Custom items:', customItemsData?.length || 0, customItemsData);
-      console.log('- Question answers:', questionAnswersData?.length || 0, questionAnswersData);
+      // Check for any query errors
+      if (detailsError) console.log('Order details error:', detailsError);
+      if (commonError) console.log('Common items error:', commonError);
+      if (customError) console.log('Custom items error:', customError);
+      if (qaError) console.log('Question answers error:', qaError);
+
+      // Write debug output to a temporary file so we can see it
+      const fs = require('fs');
+      const debugInfo = {
+        orderId: id,
+        orderDetailsCount: orderDetailsData?.length || 0,
+        orderDetailsData: orderDetailsData,
+        commonItemsCount: commonItemsData?.length || 0,
+        commonItemsData: commonItemsData,
+        customItemsCount: customItemsData?.length || 0,
+        customItemsData: customItemsData,
+        questionAnswersCount: questionAnswersData?.length || 0,
+        questionAnswersData: questionAnswersData,
+        timestamp: new Date().toISOString()
+      };
+      
+      fs.writeFileSync('/tmp/debug-order-data.json', JSON.stringify(debugInfo, null, 2));
+      
+      console.log('DEBUG: Order data written to /tmp/debug-order-data.json');
+      console.log('COUNTS:', {
+        orderDetails: orderDetailsData?.length || 0,
+        commonItems: commonItemsData?.length || 0,
+        customItems: customItemsData?.length || 0,
+        questionAnswers: questionAnswersData?.length || 0
+      });
 
       // Let's also check if ANY orders have related data
       const { data: anyOrderDetails } = await supabase
