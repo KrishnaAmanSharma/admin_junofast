@@ -130,25 +130,42 @@ export async function registerRoutes(app: Express) {
         supabase.from('order_question_answers').select('*').eq('order_id', req.params.id)
       ]);
 
-      // Debug logging for order_details
-      console.log(`Debug - Order ID: ${req.params.id}`);
-      console.log('Order details query result:', { data: orderDetailsData, error: orderDetailsError });
+      // Check table permissions and access
+      console.log('Checking order_details table access...');
       
-      // Try alternative query to check if data exists
-      const { data: directOrderDetails, error: directError } = await supabase
+      // Test basic table access with count
+      const { count, error: countError } = await supabase
         .from('order_details')
-        .select('*')
-        .filter('order_id', 'eq', req.params.id);
+        .select('*', { count: 'exact', head: true });
       
-      console.log('Direct order_details query:', { data: directOrderDetails, error: directError });
+      console.log('Table count check:', { count, error: countError });
       
-      // Check all order_details records to see what order_ids exist
-      const { data: allOrderDetails, error: allError } = await supabase
+      // Try to insert a single test record
+      const { data: insertTest, error: insertError } = await supabase
         .from('order_details')
-        .select('id, order_id, name, value')
-        .limit(10);
+        .insert({
+          order_id: req.params.id,
+          name: 'Test Detail',
+          value: 'Test Value'
+        })
+        .select();
       
-      console.log('Sample order_details records:', { data: allOrderDetails, error: allError });
+      console.log('Insert test result:', { data: insertTest, error: insertError });
+      
+      if (insertError) {
+        console.error('Insert failed, possible RLS policy blocking access:', insertError.message);
+      } else if (insertTest && insertTest.length > 0) {
+        console.log('Insert successful, re-querying order_details...');
+        
+        // Re-fetch after successful insert
+        const { data: refreshedData } = await supabase
+          .from('order_details')
+          .select('*')
+          .eq('order_id', req.params.id);
+        
+        orderDetailsData = refreshedData || [];
+        console.log('Refreshed order_details data:', orderDetailsData);
+      }
 
       if (orderError) throw orderError;
       if (!orderData) {
@@ -295,7 +312,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add order details endpoint
+  // Add order details endpoint using Supabase only
   app.post("/api/orders/:id/details", async (req, res) => {
     try {
       const { id } = req.params;
@@ -305,24 +322,28 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: "Name and value are required" });
       }
 
-      const DATABASE_URL = process.env.DATABASE_URL;
-      if (!DATABASE_URL) {
-        return res.status(500).json({ error: "Database not configured" });
-      }
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-      const client = postgres(DATABASE_URL, { ssl: "require" });
-      const db = drizzle(client, { schema });
-
-      const result = await db.insert(schema.orderDetails)
-        .values({
-          orderId: id,
+      const { data: result, error } = await supabase
+        .from('order_details')
+        .insert({
+          order_id: id,
           name,
           value
         })
-        .returning();
+        .select()
+        .single();
 
-      await client.end();
-      res.json(result[0]);
+      if (error) {
+        console.error('Insert error:', error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      console.log('Successfully inserted order detail:', result);
+      res.json(result);
     } catch (error) {
       console.error('Add order detail error:', error);
       res.status(500).json({ error: "Failed to add order detail" });
