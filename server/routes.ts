@@ -107,79 +107,49 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Get single order with details using your optimized SQL query
+  // Get single order with details using parallel queries (optimized approach)
   app.get("/api/orders/:id", async (req, res) => {
     try {
-      const sql = postgres(process.env.DATABASE_URL!, {
-        ssl: { rejectUnauthorized: false }
-      });
-      
-      const optimizedResults = await sql`
-        SELECT
-          o.*,
-          -- Order details as JSON array
-          COALESCE(
-            (
-              SELECT json_agg(od)
-              FROM order_details od
-              WHERE od.order_id = o.id
-            ), '[]'::json
-          ) AS order_details,
-          -- Common items as JSON array
-          COALESCE(
-            (
-              SELECT json_agg(ci)
-              FROM common_items_in_orders ci
-              WHERE ci.order_id = o.id
-            ), '[]'::json
-          ) AS common_items,
-          -- Custom items as JSON array, including their photos
-          COALESCE(
-            (
-              SELECT json_agg(
-                jsonb_set(
-                  to_jsonb(cu),
-                  '{photos}',
-                  COALESCE(
-                    (
-                      SELECT json_agg(ip.photo_url)
-                      FROM item_photos ip
-                      WHERE ip.custom_item_id = cu.id
-                    )::jsonb,
-                    '[]'::jsonb
-                  )
-                )
-              )
-              FROM custom_items cu
-              WHERE cu.order_id = o.id
-            ), '[]'::json
-          ) AS custom_items,
-          -- Question answers as JSON array
-          COALESCE(
-            (
-              SELECT json_agg(qa)
-              FROM order_question_answers qa
-              WHERE qa.order_id = o.id
-            ), '[]'::json
-          ) AS question_answers
-        FROM orders o
-        WHERE o.id = ${req.params.id}
-      `;
-      
-      await sql.end();
-      
-      if (optimizedResults.length === 0) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-      
-      const orderData = optimizedResults[0];
-      
       const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
       const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
       
       const supabase = createClient(supabaseUrl, supabaseKey);
       
-      // Get user profile from the order data
+      // Fetch all data in parallel using the working Supabase client
+      const [
+        { data: orderData, error: orderError },
+        { data: orderDetailsData, error: orderDetailsError },
+        { data: commonItemsData, error: commonItemsError },
+        { data: customItemsData, error: customItemsError },
+        { data: questionAnswersData, error: questionAnswersError }
+      ] = await Promise.all([
+        supabase.from('orders').select('*').eq('id', req.params.id).single(),
+        supabase.from('order_details').select('*').eq('order_id', req.params.id),
+        supabase.from('common_items_in_orders').select('*').eq('order_id', req.params.id),
+        supabase.from('custom_items').select('*').eq('order_id', req.params.id),
+        supabase.from('order_question_answers').select('*').eq('order_id', req.params.id)
+      ]);
+
+      if (orderError) throw orderError;
+      if (!orderData) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      // Fetch custom item photos if there are custom items
+      let itemPhotos = [];
+      if (customItemsData && customItemsData.length > 0) {
+        const customItemIds = customItemsData.map(item => item.id);
+        const { data: photosData } = await supabase
+          .from('item_photos')
+          .select('*')
+          .in('custom_item_id', customItemIds);
+        
+        if (photosData) {
+          itemPhotos = photosData;
+        }
+      }
+      
+      // Get user profile
       let profile = null;
       if (orderData.user_id) {
         const { data: profileData, error: profileError } = await supabase
@@ -225,9 +195,9 @@ export async function registerRoutes(app: Express) {
         updatedAt: orderData.updated_at,
       };
 
-      // Process nested data exactly as returned from your optimized SQL query
-      const orderDetails = orderData.order_details || [];
-      const commonItems = (orderData.common_items || []).map((item: any) => ({
+      // Process nested data from parallel queries
+      const orderDetails = orderDetailsData || [];
+      const commonItems = (commonItemsData || []).map((item: any) => ({
         id: item.id,
         orderId: item.order_id,
         commonItemId: item.item_id,
@@ -238,17 +208,21 @@ export async function registerRoutes(app: Express) {
         createdAt: item.created_at,
       }));
       
-      const customItems = (orderData.custom_items || []).map((item: any) => ({
+      const customItems = (customItemsData || []).map((item: any) => ({
         id: item.id,
         orderId: item.order_id,
         name: item.name,
         description: item.description || '',
         quantity: item.quantity || 1,
         createdAt: item.created_at,
-        photos: item.photos || [],
+        photos: itemPhotos.filter(photo => photo.custom_item_id === item.id).map(photo => ({
+          id: photo.id,
+          photoUrl: photo.photo_url,
+          createdAt: photo.created_at
+        }))
       }));
       
-      const questionAnswers = (orderData.question_answers || []).map((qa: any) => ({
+      const questionAnswers = (questionAnswersData || []).map((qa: any) => ({
         id: qa.id,
         orderId: qa.order_id,
         questionId: qa.question_id,
@@ -260,7 +234,7 @@ export async function registerRoutes(app: Express) {
         createdAt: qa.created_at,
       }));
 
-      console.log(`Order ${req.params.id} - Optimized query results:`);
+      console.log(`Order ${req.params.id} - Parallel queries results:`);
       console.log('- Order details:', orderDetails.length);
       console.log('- Common items:', commonItems.length);
       console.log('- Custom items:', customItems.length);
