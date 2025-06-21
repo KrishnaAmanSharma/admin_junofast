@@ -198,8 +198,8 @@ export async function registerRoutes(app: Express) {
           profile = {
             id: profileData.id,
             email: profileData.email,
-            fullName: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || profileData.email || 'Unknown User',
-            phoneNumber: profileData.phone,
+            fullName: profileData.full_name || profileData.email || 'Unknown User',
+            phoneNumber: profileData.phone_number,
             avatarUrl: profileData.avatar_url || null,
             createdAt: profileData.created_at,
             updatedAt: profileData.updated_at,
