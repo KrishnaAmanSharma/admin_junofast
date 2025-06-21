@@ -130,10 +130,36 @@ export async function registerRoutes(app: Express) {
         supabase.from('order_question_answers').select('*').eq('order_id', req.params.id)
       ]);
 
+      // Debug logging for order_details
+      console.log(`Debug - Order ID: ${req.params.id}`);
+      console.log('Order details query result:', { data: orderDetailsData, error: orderDetailsError });
+      
+      // Try alternative query to check if data exists
+      const { data: directOrderDetails, error: directError } = await supabase
+        .from('order_details')
+        .select('*')
+        .filter('order_id', 'eq', req.params.id);
+      
+      console.log('Direct order_details query:', { data: directOrderDetails, error: directError });
+      
+      // Check all order_details records to see what order_ids exist
+      const { data: allOrderDetails, error: allError } = await supabase
+        .from('order_details')
+        .select('id, order_id, name, value')
+        .limit(10);
+      
+      console.log('Sample order_details records:', { data: allOrderDetails, error: allError });
+
       if (orderError) throw orderError;
       if (!orderData) {
         return res.status(404).json({ error: 'Order not found' });
       }
+
+      // Log any specific errors
+      if (orderDetailsError) console.error('Order details error:', orderDetailsError);
+      if (commonItemsError) console.error('Common items error:', commonItemsError);
+      if (customItemsError) console.error('Custom items error:', customItemsError);
+      if (questionAnswersError) console.error('Question answers error:', questionAnswersError);
 
       // Fetch custom item photos if there are custom items
       let itemPhotos = [];
