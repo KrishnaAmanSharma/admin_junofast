@@ -285,6 +285,9 @@ export class PostgresStorage implements IStorage {
         .eq('id', id)
         .single();
 
+      console.log('Supabase query error:', error);
+      console.log('Raw orderData keys:', orderData ? Object.keys(orderData) : 'null');
+
       if (error) {
         throw new Error(`Failed to fetch order: ${error.message}`);
       }
