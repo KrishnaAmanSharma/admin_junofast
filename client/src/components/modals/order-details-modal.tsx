@@ -385,12 +385,21 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
             <div>
               <h4 className="font-semibold text-admin-slate mb-3">Additional Order Details</h4>
               {orderDetails?.orderDetails && orderDetails.orderDetails.length > 0 ? (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {orderDetails.orderDetails.map((detail: any) => (
                     <div key={detail.id} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-admin-slate">{detail.name}</span>
-                        <span className="text-sm text-gray-600">{detail.value}</span>
+                      <div className="flex flex-col space-y-1">
+                        <span className="font-medium text-admin-slate capitalize">
+                          {detail.name.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-sm text-gray-600 break-words">
+                          {detail.value}
+                        </span>
+                        {detail.created_at && (
+                          <span className="text-xs text-gray-400">
+                            Added: {new Date(detail.created_at).toLocaleString()}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
