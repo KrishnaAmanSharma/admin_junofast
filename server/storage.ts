@@ -403,7 +403,21 @@ export class PostgresStorage implements IStorage {
         createdAt: detail.created_at,
       }));
 
+      // Direct database verification
+      const { data: dbCheck } = await supabase.rpc('execute_sql', {
+        query: `
+          SELECT 
+            (SELECT COUNT(*) FROM order_details WHERE order_id = '${id}') as order_details_count,
+            (SELECT COUNT(*) FROM common_items_in_orders WHERE order_id = '${id}') as common_items_count,
+            (SELECT COUNT(*) FROM custom_items WHERE order_id = '${id}') as custom_items_count,
+            (SELECT COUNT(*) FROM order_question_answers WHERE order_id = '${id}') as qa_count
+        `
+      }).catch(() => ({ data: null }));
+
       console.log(`Order ${id}: Found ${orderDetails.length} details, ${commonItems.length} common items, ${customItems.length} custom items, ${questionAnswers.length} answers`);
+      if (dbCheck?.data) {
+        console.log('Direct DB counts:', dbCheck.data);
+      }
 
       return {
         order: mappedOrder,
