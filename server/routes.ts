@@ -419,6 +419,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add order details endpoint
+  app.post("/api/orders/:id/details", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, value } = req.body;
+
+      if (!name || !value) {
+        return res.status(400).json({ error: "Name and value are required" });
+      }
+
+      const result = await db.insert(schema.orderDetails)
+        .values({
+          orderId: id,
+          name,
+          value
+        })
+        .returning();
+
+      res.json(result[0]);
+    } catch (error) {
+      console.error('Add order detail error:', error);
+      res.status(500).json({ error: "Failed to add order detail" });
+    }
+  });
+
   // Users/Profiles Routes
   app.get("/api/profiles", async (req, res) => {
     try {
