@@ -94,7 +94,7 @@ export async function registerRoutes(app: Express) {
           profile: profile ? {
             id: profile.id,
             email: profile.email,
-            fullName: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null,
+            fullName: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown User',
             phoneNumber: profile.phone,
             avatarUrl: profile.avatar_url || null,
             createdAt: profile.created_at,
@@ -170,7 +170,7 @@ export async function registerRoutes(app: Express) {
           profile = {
             id: profileData.id,
             email: profileData.email,
-            fullName: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || null,
+            fullName: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || profileData.email || 'Unknown User',
             phoneNumber: profileData.phone,
             avatarUrl: profileData.avatar_url || null,
             createdAt: profileData.created_at,
