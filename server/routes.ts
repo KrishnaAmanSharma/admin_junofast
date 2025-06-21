@@ -2,6 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertServiceTypeSchema, insertCommonItemSchema, insertServiceQuestionSchema, updateOrderSchema } from "@shared/schema";
+import * as schema from "@shared/schema";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 
@@ -429,6 +432,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Name and value are required" });
       }
 
+      const DATABASE_URL = process.env.DATABASE_URL;
+      if (!DATABASE_URL) {
+        return res.status(500).json({ error: "Database not configured" });
+      }
+
+      const client = postgres(DATABASE_URL, { ssl: "require" });
+      const db = drizzle(client, { schema });
+
       const result = await db.insert(schema.orderDetails)
         .values({
           orderId: id,
@@ -437,6 +448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .returning();
 
+      await client.end();
       res.json(result[0]);
     } catch (error) {
       console.error('Add order detail error:', error);
