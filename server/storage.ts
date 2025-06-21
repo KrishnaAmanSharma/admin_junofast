@@ -272,87 +272,79 @@ export class PostgresStorage implements IStorage {
     );
 
     try {
-      // Fetch the main order
-      const { data: order, error: orderError } = await supabase
+      // Get the order with profile using optimized query
+      const { data: orderData, error: orderError } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          profile:profiles(*)
+        `)
         .eq('id', id)
         .single();
 
       if (orderError) throw orderError;
+      if (!orderData) throw new Error('Order not found');
 
-      // Fetch user profile
-      let profile = null;
-      if (order.user_id) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', order.user_id)
-          .single();
-        
-        if (!profileError && profileData) {
-          profile = {
-            ...profileData,
-            fullName: profileData.full_name,
-            phoneNumber: profileData.phone_number,
-            avatarUrl: profileData.avatar_url
-          };
-        }
-      }
+      // Use optimized approach to get all nested data in parallel
+      const [
+        { data: orderDetailsData },
+        { data: commonItemsData },
+        { data: customItemsData },
+        { data: questionAnswersData }
+      ] = await Promise.all([
+        supabase.from('order_details').select('*').eq('order_id', id),
+        supabase.from('common_items_in_orders').select('*').eq('order_id', id),
+        supabase.from('custom_items').select('*').eq('order_id', id),
+        supabase.from('order_question_answers').select('*').eq('order_id', id)
+      ]);
 
-      // Fetch common items in orders
-      const { data: commonItemsData } = await supabase
-        .from('common_items_in_orders')
-        .select('*')
-        .eq('order_id', id);
-
-      // Fetch custom items
-      const { data: customItemsData } = await supabase
-        .from('custom_items')
-        .select('*')
-        .eq('order_id', id);
-
-      // Fetch item photos for custom items
-      let itemPhotos = [];
+      // Get photos for custom items if any exist
+      let itemPhotos: any[] = [];
       if (customItemsData && customItemsData.length > 0) {
-        const customItemIds = customItemsData.map(item => item.id);
+        const customItemIds = customItemsData.map((item: any) => item.id);
         const { data: photosData } = await supabase
           .from('item_photos')
           .select('*')
           .in('custom_item_id', customItemIds);
         
-        if (photosData) {
-          itemPhotos = photosData;
-        }
+        itemPhotos = photosData || [];
       }
 
-      // Fetch order question answers
-      const { data: questionAnswersData } = await supabase
-        .from('order_question_answers')
-        .select('*')
-        .eq('order_id', id);
-
-      // Fetch order details
-      const { data: orderDetailsData } = await supabase
-        .from('order_details')
-        .select('*')
-        .eq('order_id', id);
-
-      // Map order with proper field names (same as routes.ts)
+      // Map order with proper field names
       const mappedOrder = {
-        ...order,
-        serviceType: order.service_type,
-        pickupAddress: order.pickup_address,
-        pickupPincode: order.pickup_pincode,
-        pickupLatitude: order.pickup_latitude,
-        pickupLongitude: order.pickup_longitude,
-        dropAddress: order.drop_address,
-        dropPincode: order.drop_pincode,
-        approxPrice: order.approx_price,
-        createdAt: order.created_at,
-        updatedAt: order.updated_at,
-        userId: order.user_id
+        id: orderData.id,
+        userId: orderData.user_id,
+        serviceType: orderData.service_type,
+        status: orderData.status,
+        pickupAddress: orderData.pickup_address,
+        pickupPincode: orderData.pickup_pincode,
+        pickupLatitude: orderData.pickup_latitude,
+        pickupLongitude: orderData.pickup_longitude,
+        dropAddress: orderData.drop_address,
+        dropPincode: orderData.drop_pincode,
+        dropLatitude: orderData.drop_latitude,
+        dropLongitude: orderData.drop_longitude,
+        estimatedPrice: orderData.estimated_price,
+        finalPrice: orderData.final_price,
+        scheduledDate: orderData.scheduled_date,
+        completedDate: orderData.completed_date,
+        notes: orderData.notes,
+        approxPrice: orderData.approx_price,
+        createdAt: orderData.created_at,
+        updatedAt: orderData.updated_at,
       };
+
+      // Map the profile
+      const userProfile = orderData.profile ? {
+        id: orderData.profile.id,
+        userId: orderData.profile.user_id,
+        firstName: orderData.profile.first_name,
+        lastName: orderData.profile.last_name,
+        email: orderData.profile.email,
+        phone: orderData.profile.phone,
+        createdAt: orderData.profile.created_at,
+        updatedAt: orderData.profile.updated_at,
+      } : null;
 
       // Process common items (same as routes.ts)
       const commonItems = (commonItemsData || []).map(item => ({
@@ -421,7 +413,7 @@ export class PostgresStorage implements IStorage {
 
       return {
         order: mappedOrder,
-        profile,
+        profile: userProfile,
         commonItems,
         customItems,
         questionAnswers,
