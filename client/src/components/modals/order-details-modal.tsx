@@ -9,6 +9,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface OrderDetailsModalProps {
   orderId: string;
@@ -18,6 +19,7 @@ interface OrderDetailsModalProps {
 
 export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModalProps) {
   const [newPrice, setNewPrice] = useState("");
+  const [newStatus, setNewStatus] = useState("");
   const { toast } = useToast();
 
   const { data: orderDetails, isLoading } = useQuery({
@@ -30,27 +32,25 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     }
   });
 
-  const updatePriceMutation = useMutation({
-    mutationFn: async ({ id, price }: { id: string; price: string }) => {
-      await apiRequest("PUT", `/api/orders/${id}`, {
-        approxPrice: price,
-        status: "Price Updated",
-      });
+  const updateOrderMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      await apiRequest("PUT", `/api/orders/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({
         title: "Success",
-        description: "Order price updated successfully",
+        description: "Order updated successfully",
       });
       setNewPrice("");
+      setNewStatus("");
       onClose();
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to update order price",
+        description: "Failed to update order",
         variant: "destructive",
       });
     },
@@ -59,11 +59,32 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   const handleUpdatePrice = () => {
     if (!newPrice || !orderId) return;
     
-    updatePriceMutation.mutate({
+    const updates: any = {
+      approxPrice: newPrice,
+      status: "Price Updated",
+    };
+    
+    updateOrderMutation.mutate({
       id: orderId,
-      price: newPrice,
+      updates,
     });
   };
+
+  const handleUpdateStatus = () => {
+    if (!newStatus || !orderId) return;
+    
+    const updates: any = {
+      status: newStatus,
+    };
+    
+    updateOrderMutation.mutate({
+      id: orderId,
+      updates,
+    });
+  };
+
+  const isPriceAccepted = orderDetails?.order?.status === "Price Accepted";
+  const canEditPrice = !isPriceAccepted;
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
@@ -211,12 +232,50 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
             <Separator />
 
-            {/* Price Update Section */}
-            <div>
-              <h4 className="font-semibold text-admin-slate mb-3">Price Management</h4>
+            {/* Order Management Section */}
+            <div className="space-y-6">
+              <h4 className="font-semibold text-admin-slate mb-3">Order Management</h4>
+              
+              {/* Status Update */}
+              <div className="max-w-md">
+                <Label htmlFor="newStatus" className="text-sm font-medium text-gray-700">
+                  Update Status
+                </Label>
+                <div className="flex gap-2 mt-1">
+                  <Select value={newStatus} onValueChange={setNewStatus}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select new status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Confirmed">Confirmed</SelectItem>
+                      <SelectItem value="In Progress">In Progress</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                      <SelectItem value="Price Updated">Price Updated</SelectItem>
+                      <SelectItem value="Price Accepted">Price Accepted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={handleUpdateStatus}
+                    disabled={updateOrderMutation.isPending || !newStatus}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {updateOrderMutation.isPending ? "Updating..." : "Update Status"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Price Update */}
               <div className="max-w-md">
                 <Label htmlFor="newPrice" className="text-sm font-medium text-gray-700">
                   Update Price (₹)
+                  {!canEditPrice && (
+                    <span className="text-red-500 text-xs ml-2">
+                      (Price locked - already accepted)
+                    </span>
+                  )}
                 </Label>
                 <div className="flex gap-2 mt-1">
                   <Input
@@ -224,17 +283,23 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                     type="number"
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
-                    placeholder="Enter new price"
+                    placeholder={canEditPrice ? "Enter new price" : "Price cannot be changed"}
                     className="flex-1"
+                    disabled={!canEditPrice}
                   />
                   <Button 
                     onClick={handleUpdatePrice}
-                    disabled={updatePriceMutation.isPending || !newPrice}
+                    disabled={updateOrderMutation.isPending || !newPrice || !canEditPrice}
                     size="sm"
                   >
-                    {updatePriceMutation.isPending ? "Updating..." : "Update"}
+                    {updateOrderMutation.isPending ? "Updating..." : "Update Price"}
                   </Button>
                 </div>
+                {!canEditPrice && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Price cannot be modified because it has already been accepted by the customer.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -432,10 +497,10 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 <div className="flex items-end">
                   <Button 
                     onClick={handleUpdatePrice}
-                    disabled={!newPrice || updatePriceMutation.isPending}
+                    disabled={!newPrice || updateOrderMutation.isPending}
                     className="bg-primary-custom hover:bg-blue-700"
                   >
-                    {updatePriceMutation.isPending ? "Updating..." : "Update Price"}
+                    {updateOrderMutation.isPending ? "Updating..." : "Update Price"}
                   </Button>
                 </div>
               </div>
