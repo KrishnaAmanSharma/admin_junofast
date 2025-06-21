@@ -95,9 +95,7 @@ export default function Dashboard() {
                   <Package className="text-primary-custom" />
                 </div>
               </div>
-              <div className="mt-4">
-                <span className="text-sm text-secondary-custom">+12% from last month</span>
-              </div>
+
             </CardContent>
           </Card>
 
@@ -114,9 +112,7 @@ export default function Dashboard() {
                   <IndianRupee className="text-secondary-custom" />
                 </div>
               </div>
-              <div className="mt-4">
-                <span className="text-sm text-secondary-custom">+8% from last month</span>
-              </div>
+
             </CardContent>
           </Card>
 
@@ -133,9 +129,7 @@ export default function Dashboard() {
                   <Clock className="text-warning-custom" />
                 </div>
               </div>
-              <div className="mt-4">
-                <span className="text-sm text-destructive-custom">3 urgent</span>
-              </div>
+
             </CardContent>
           </Card>
 
@@ -152,9 +146,7 @@ export default function Dashboard() {
                   <UserPlus className="text-purple-600" />
                 </div>
               </div>
-              <div className="mt-4">
-                <span className="text-sm text-secondary-custom">+5 today</span>
-              </div>
+
             </CardContent>
           </Card>
         </div>
