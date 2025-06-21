@@ -83,8 +83,8 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     });
   };
 
-  const isPriceAccepted = orderDetails?.order?.status === "Price Accepted";
-  const canEditPrice = !isPriceAccepted;
+  const currentStatus = orderDetails?.order?.status;
+  const canEditPrice = currentStatus === "Pending" || currentStatus === "Price Updated";
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
@@ -273,7 +273,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                   Update Price (₹)
                   {!canEditPrice && (
                     <span className="text-red-500 text-xs ml-2">
-                      (Price locked - already accepted)
+                      (Price locked - only editable when Pending or Price Updated)
                     </span>
                   )}
                 </Label>
@@ -297,7 +297,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 </div>
                 {!canEditPrice && (
                   <p className="text-xs text-amber-600 mt-1">
-                    Price cannot be modified because it has already been accepted by the customer.
+                    Price can only be modified when order status is "Pending" or "Price Updated".
                   </p>
                 )}
               </div>
@@ -476,35 +476,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
               )}
             </div>
 
-            <Separator />
-
-            {/* Price Update Section */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <h4 className="font-semibold text-admin-slate mb-3">Update Price</h4>
-              <div className="flex space-x-4">
-                <div className="flex-1">
-                  <Label htmlFor="newPrice" className="text-sm font-medium">
-                    New Price (₹)
-                  </Label>
-                  <Input
-                    id="newPrice"
-                    type="number"
-                    placeholder="Enter new price"
-                    value={newPrice}
-                    onChange={(e) => setNewPrice(e.target.value)}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button 
-                    onClick={handleUpdatePrice}
-                    disabled={!newPrice || updateOrderMutation.isPending}
-                    className="bg-primary-custom hover:bg-blue-700"
-                  >
-                    {updateOrderMutation.isPending ? "Updating..." : "Update Price"}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            
           </div>
         )}
       </DialogContent>
