@@ -209,84 +209,128 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
               </div>
             </div>
 
+            <Separator />
+            
             {/* Common Items */}
-            {orderDetails?.commonItems && orderDetails.commonItems.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <h4 className="font-semibold text-admin-slate mb-3">Common Items</h4>
-                  <div className="space-y-2">
-                    {orderDetails?.commonItems?.map((item: any) => (
-                      <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <img 
-                            src={item.imageUrl || ""} 
-                            alt={item.name}
-                            className="w-12 h-12 object-cover rounded"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                          <div>
-                            <p className="font-medium text-admin-slate">{item.name}</p>
-                            <p className="text-sm text-gray-600">{item.description}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">Qty: {item.quantity}</p>
+            <div>
+              <h4 className="font-semibold text-admin-slate mb-3">Common Items</h4>
+              {orderDetails?.commonItems && orderDetails.commonItems.length > 0 ? (
+                <div className="space-y-2">
+                  {orderDetails.commonItems.map((item: any) => (
+                    <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <img 
+                          src={item.image_url || ""} 
+                          alt={item.name}
+                          className="w-12 h-12 object-cover rounded"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <div>
+                          <p className="font-medium text-admin-slate">{item.name}</p>
+                          <p className="text-sm text-gray-600">{item.description}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="text-right">
+                        <p className="font-medium">Qty: {item.quantity}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </>
-            )}
+              ) : (
+                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                  No common items selected for this order
+                </div>
+              )}
+            </div>
 
+            <Separator />
+            
             {/* Custom Items */}
-            {orderDetails?.customItems && orderDetails.customItems.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <h4 className="font-semibold text-admin-slate mb-3">Custom Items</h4>
-                  <div className="space-y-2">
-                    {orderDetails?.customItems?.map((item: any) => (
-                      <div key={item.id} className="p-3 bg-gray-50 rounded-lg">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-admin-slate">{item.name}</p>
-                            <p className="text-sm text-gray-600">{item.description}</p>
-                          </div>
-                          <p className="font-medium">Qty: {item.quantity}</p>
+            <div>
+              <h4 className="font-semibold text-admin-slate mb-3">Custom Items</h4>
+              {orderDetails?.customItems && orderDetails.customItems.length > 0 ? (
+                <div className="space-y-2">
+                  {orderDetails.customItems.map((item: any) => (
+                    <div key={item.id} className="p-3 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-admin-slate">{item.name}</p>
+                          <p className="text-sm text-gray-600">{item.description}</p>
                         </div>
+                        <p className="font-medium">Qty: {item.quantity}</p>
                       </div>
-                    ))}
-                  </div>
+                      {item.photos && item.photos.length > 0 && (
+                        <div className="mt-3 flex gap-2">
+                          {item.photos.map((photo: any) => (
+                            <img 
+                              key={photo.id}
+                              src={photo.photoUrl} 
+                              alt="Item photo"
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              </>
-            )}
+              ) : (
+                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                  No custom items added for this order
+                </div>
+              )}
+            </div>
 
+            <Separator />
+            
             {/* Question Answers */}
-            {orderDetails?.questionAnswers && orderDetails.questionAnswers.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <h4 className="font-semibold text-admin-slate mb-3">Service Questions</h4>
-                  <div className="space-y-3">
-                    {orderDetails?.questionAnswers?.map((qa: any) => (
-                      <div key={qa.id} className="p-3 bg-gray-50 rounded-lg">
-                        <p className="font-medium text-admin-slate mb-1">{qa.question}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Badge variant="outline">
-                            {qa.questionType}
-                          </Badge>
-                          <span>{qa.answer}</span>
-                        </div>
+            <div>
+              <h4 className="font-semibold text-admin-slate mb-3">Service Questions</h4>
+              {orderDetails?.questionAnswers && orderDetails.questionAnswers.length > 0 ? (
+                <div className="space-y-3">
+                  {orderDetails.questionAnswers.map((qa: any) => (
+                    <div key={qa.id} className="p-3 bg-gray-50 rounded-lg">
+                      <p className="font-medium text-admin-slate mb-1">{qa.question}</p>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Badge variant="outline">
+                          {qa.questionType}
+                        </Badge>
+                        <span>{qa.answer}</span>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              </>
-            )}
+              ) : (
+                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                  No service questions answered for this order
+                </div>
+              )}
+            </div>
+
+            <Separator />
+            
+            {/* Order Details */}
+            <div>
+              <h4 className="font-semibold text-admin-slate mb-3">Additional Order Details</h4>
+              {orderDetails?.orderDetails && orderDetails.orderDetails.length > 0 ? (
+                <div className="space-y-2">
+                  {orderDetails.orderDetails.map((detail: any) => (
+                    <div key={detail.id} className="p-3 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-admin-slate">{detail.name}</span>
+                        <span className="text-sm text-gray-600">{detail.value}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                  No additional details recorded for this order
+                </div>
+              )}
+            </div>
 
             <Separator />
 

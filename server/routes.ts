@@ -268,7 +268,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(mappedOrders);
     } catch (error) {
       console.error('Orders fetch error:', error);
-      res.status(500).json({ error: "Failed to fetch orders", details: error.message });
+      res.status(500).json({ 
+        error: "Failed to fetch orders", 
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
