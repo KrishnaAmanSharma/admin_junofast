@@ -208,18 +208,112 @@ export class PostgresStorage implements IStorage {
       if (orderError) throw orderError;
       if (!orderData) throw new Error('Order not found');
 
-      // Use your optimized approach to get all nested data in parallel
-      const [
-        { data: orderDetailsData },
-        { data: commonItemsData },
-        { data: customItemsData },
-        { data: questionAnswersData }
-      ] = await Promise.all([
-        supabase.from('order_details').select('*').eq('order_id', id),
-        supabase.from('common_items_in_orders').select('*').eq('order_id', id),
-        supabase.from('custom_items').select('*').eq('order_id', id),
-        supabase.from('order_question_answers').select('*').eq('order_id', id)
-      ]);
+      // Use direct postgres connection to execute your exact optimized SQL query
+      const postgres = require('postgres');
+      const sql = postgres(process.env.DATABASE_URL!);
+      
+      let orderDetailsData: any[] = [];
+      let commonItemsData: any[] = [];
+      let customItemsData: any[] = [];
+      let questionAnswersData: any[] = [];
+      
+      try {
+        const optimizedResults = await sql`
+          SELECT
+            o.*,
+            -- Order details as JSON array
+            COALESCE(
+              (
+                SELECT json_agg(od)
+                FROM order_details od
+                WHERE od.order_id = o.id
+              ), '[]'::json
+            ) AS order_details,
+            -- Common items as JSON array
+            COALESCE(
+              (
+                SELECT json_agg(ci)
+                FROM common_items_in_orders ci
+                WHERE ci.order_id = o.id
+              ), '[]'::json
+            ) AS common_items,
+            -- Custom items as JSON array, including their photos
+            COALESCE(
+              (
+                SELECT json_agg(
+                  jsonb_set(
+                    to_jsonb(cu),
+                    '{photos}',
+                    COALESCE(
+                      (
+                        SELECT json_agg(ip.photo_url)
+                        FROM item_photos ip
+                        WHERE ip.custom_item_id = cu.id
+                      )::jsonb,
+                      '[]'::jsonb
+                    )
+                  )
+                )
+                FROM custom_items cu
+                WHERE cu.order_id = o.id
+              ), '[]'::json
+            ) AS custom_items,
+            -- Question answers as JSON array
+            COALESCE(
+              (
+                SELECT json_agg(qa)
+                FROM order_question_answers qa
+                WHERE qa.order_id = o.id
+              ), '[]'::json
+            ) AS question_answers
+          FROM orders o
+          WHERE o.id = ${id}
+        `;
+        
+        if (optimizedResults.length > 0) {
+          const result = optimizedResults[0];
+          
+          // Extract nested data from the optimized query results  
+          orderDetailsData = result.order_details || [];
+          commonItemsData = result.common_items || [];
+          customItemsData = result.custom_items || [];
+          questionAnswersData = result.question_answers || [];
+          
+          console.log(`Order ${id} - Found using optimized query:`);
+          console.log('- Order details:', orderDetailsData.length);
+          console.log('- Common items:', commonItemsData.length);
+          console.log('- Custom items:', customItemsData.length);
+          console.log('- Question answers:', questionAnswersData.length);
+        }
+        
+        await sql.end();
+      } catch (sqlError) {
+        console.error('Optimized SQL query failed, falling back to Supabase:', sqlError);
+        await sql.end();
+        
+        // Fallback to individual Supabase queries
+        const [
+          { data: fallbackOrderDetails, error: odError },
+          { data: fallbackCommonItems, error: ciError },
+          { data: fallbackCustomItems, error: cuError },
+          { data: fallbackQuestionAnswers, error: qaError }
+        ] = await Promise.all([
+          supabase.from('order_details').select('*').eq('order_id', id),
+          supabase.from('common_items_in_orders').select('*').eq('order_id', id),
+          supabase.from('custom_items').select('*').eq('order_id', id),
+          supabase.from('order_question_answers').select('*').eq('order_id', id)
+        ]);
+
+        orderDetailsData = fallbackOrderDetails || [];
+        commonItemsData = fallbackCommonItems || [];
+        customItemsData = fallbackCustomItems || [];
+        questionAnswersData = fallbackQuestionAnswers || [];
+
+        if (odError) console.error('Order details error:', odError);
+        if (ciError) console.error('Common items error:', ciError);
+        if (cuError) console.error('Custom items error:', cuError);
+        if (qaError) console.error('Question answers error:', qaError);
+      }
 
       // Get photos for custom items if any exist
       let itemPhotos: any[] = [];
