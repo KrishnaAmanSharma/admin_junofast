@@ -102,7 +102,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
         <DialogHeader>
           <div className="flex justify-between items-center">
             <DialogTitle className="text-xl font-semibold text-admin-slate">
-              Order Details - #{orderId.slice(0, 8)}
+              Order Details - #{orderId}
             </DialogTitle>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-4 w-4" />
@@ -166,6 +166,12 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 <h4 className="font-semibold text-admin-slate mb-3">Order Information</h4>
                 <div className="space-y-2 text-sm">
                   <p>
+                    <span className="font-medium">Order ID:</span>{" "}
+                    <span className="font-mono text-xs break-all bg-gray-100 px-2 py-1 rounded">
+                      {orderDetails?.order?.id}
+                    </span>
+                  </p>
+                  <p>
                     <span className="font-medium">Service:</span>{" "}
                     <span>{orderDetails?.order?.serviceType || "Not specified"}</span>
                   </p>
@@ -178,10 +184,23 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                     <span>{formatCurrency(orderDetails?.order?.approxPrice)}</span>
                   </p>
                   <p>
+                    <span className="font-medium">User ID:</span>{" "}
+                    <span className="font-mono text-xs">{orderDetails?.order?.userId || "Not available"}</span>
+                  </p>
+                  <p>
                     <span className="font-medium">Created:</span>{" "}
                     <span>
                       {orderDetails?.order?.createdAt 
-                        ? new Date(orderDetails.order.createdAt).toLocaleDateString()
+                        ? new Date(orderDetails.order.createdAt).toLocaleString()
+                        : "Unknown"
+                      }
+                    </span>
+                  </p>
+                  <p>
+                    <span className="font-medium">Last Updated:</span>{" "}
+                    <span>
+                      {orderDetails?.order?.updatedAt 
+                        ? new Date(orderDetails.order.updatedAt).toLocaleString()
                         : "Unknown"
                       }
                     </span>
@@ -192,22 +211,71 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
             <Separator />
 
+            {/* Price Update Section */}
+            <div>
+              <h4 className="font-semibold text-admin-slate mb-3">Price Management</h4>
+              <div className="max-w-md">
+                <Label htmlFor="newPrice" className="text-sm font-medium text-gray-700">
+                  Update Price (₹)
+                </Label>
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    id="newPrice"
+                    type="number"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    placeholder="Enter new price"
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={handleUpdatePrice}
+                    disabled={updatePriceMutation.isPending || !newPrice}
+                    size="sm"
+                  >
+                    {updatePriceMutation.isPending ? "Updating..." : "Update"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Addresses */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-semibold text-admin-slate mb-3">Pickup Address</h4>
-                <p className="text-sm text-gray-600">
-                  {orderDetails?.order?.pickupAddress || "Not provided"}<br />
-                  Pincode: {orderDetails?.order?.pickupPincode || "Not provided"}
-                </p>
+                <h4 className="font-semibold text-admin-slate mb-3">Pickup Location</h4>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p>
+                    <span className="font-medium">Address:</span>{" "}
+                    {orderDetails?.order?.pickupAddress || "Not provided"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Pincode:</span>{" "}
+                    {orderDetails?.order?.pickupPincode || "Not provided"}
+                  </p>
+                  {(orderDetails?.order?.pickupLatitude || orderDetails?.order?.pickupLongitude) && (
+                    <p>
+                      <span className="font-medium">Coordinates:</span>{" "}
+                      <span className="font-mono text-xs">
+                        {orderDetails?.order?.pickupLatitude?.toFixed(6) || "N/A"}, {orderDetails?.order?.pickupLongitude?.toFixed(6) || "N/A"}
+                      </span>
+                    </p>
+                  )}
+                </div>
               </div>
               
               <div>
-                <h4 className="font-semibold text-admin-slate mb-3">Drop Address</h4>
-                <p className="text-sm text-gray-600">
-                  {orderDetails?.order?.dropAddress || "Not provided"}<br />
-                  Pincode: {orderDetails?.order?.dropPincode || "Not provided"}
-                </p>
+                <h4 className="font-semibold text-admin-slate mb-3">Drop Location</h4>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <p>
+                    <span className="font-medium">Address:</span>{" "}
+                    {orderDetails?.order?.dropAddress || "Not provided"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Pincode:</span>{" "}
+                    {orderDetails?.order?.dropPincode || "Not provided"}
+                  </p>
+                </div>
               </div>
             </div>
 
