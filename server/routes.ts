@@ -191,6 +191,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to create order with details using RPC function
+  app.post("/api/test-order", async (req, res) => {
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.VITE_SUPABASE_URL!,
+        process.env.VITE_SUPABASE_ANON_KEY!
+      );
+
+      // Get the first user ID from profiles table
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .limit(1);
+
+      if (!profiles || profiles.length === 0) {
+        return res.status(400).json({ error: 'No users found' });
+      }
+
+      const userId = profiles[0].id;
+
+      // Create order with details using the RPC function
+      const { data: orderId, error } = await supabase.rpc('create_complete_order', {
+        p_user_id: userId,
+        p_service_type: 'Office Relocation',
+        p_pickup_address: '123 Business District, Mumbai',
+        p_pickup_pincode: '400001',
+        p_pickup_latitude: 19.0760,
+        p_pickup_longitude: 72.8777,
+        p_drop_address: '456 Corporate Hub, Mumbai',
+        p_drop_pincode: '400002',
+        p_order_details: [
+          { name: 'destination_floor', value: '5' },
+          { name: 'employee_count', value: '8' },
+          { name: 'office_size', value: '2500' },
+          { name: 'elevator_access', value: 'yes' },
+          { name: 'parking_available', value: 'yes' },
+          { name: 'special_instructions', value: 'Handle with care - fragile equipment' },
+          { name: 'moving_date', value: '2024-01-15' },
+          { name: 'packing_required', value: 'yes' }
+        ],
+        p_common_items: [],
+        p_custom_items: [],
+        p_service_questions: []
+      });
+
+      if (error) {
+        console.error('RPC Error:', error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      res.json({ success: true, orderId, message: 'Test order created with order details' });
+    } catch (error) {
+      console.error('Error creating test order:', error);
+      res.status(500).json({ error: 'Failed to create test order' });
+    }
+  });
+
   // Orders Routes
   app.get("/api/orders", async (req, res) => {
     try {
