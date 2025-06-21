@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Juno Fast Admin Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .header {
+            background: linear-gradient(135deg, #2563eb, #059669);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .chapter {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 2.5em; margin: 0; }
+        h2 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+        h3 { color: #059669; }
+        .step-box {
+            background: #f0fdf4;
+            border: 1px solid #059669;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #d97706;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .feature-highlight {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+            margin: 15px 0;
+        }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #d1d5db;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f3f4f6;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👥 User Management</h1>
+        <p>Customer Relationship and Profile Management</p>
+    </div>
+
+    <div class="chapter">
+        <h2>Overview</h2>
+        <p>User Management provides comprehensive customer relationship management (CRM) capabilities. This section allows you to view, search, and manage all customer profiles, track their order history, and maintain accurate contact information.</p>
+        
+        <div class="info-box">
+            <strong>Access:</strong> Click "Users" in the left sidebar to access the user management page.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Users Table Overview</h2>
+        <p>The users table displays all registered customers with their profile information:</p>
+
+        <table>
+            <tr>
+                <th>Column</th>
+                <th>Description</th>
+                <th>Example Values</th>
+            </tr>
+            <tr>
+                <td>Avatar</td>
+                <td>Customer profile picture or initials</td>
+                <td>Profile image or "JS" for John Smith</td>
+            </tr>
+            <tr>
+                <td>Name</td>
+                <td>Customer's full name</td>
+                <td>John Smith, Sarah Johnson</td>
+            </tr>
+            <tr>
+                <td>Email</td>
+                <td>Primary email address</td>
+                <td>john.smith@email.com</td>
+            </tr>
+            <tr>
+                <td>Phone</td>
+                <td>Contact phone number</td>
+                <td>+91 9876543210</td>
+            </tr>
+            <tr>
+                <td>Join Date</td>
+                <td>Account registration date</td>
+                <td>15 May 2025</td>
+            </tr>
+            <tr>
+                <td>Status</td>
+                <td>Account status (Active/Inactive)</td>
+                <td>Active, Inactive</td>
+            </tr>
+            <tr>
+                <td>Actions</td>
+                <td>View and edit options</td>
+                <td>View Profile, Edit, Block/Unblock</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="chapter">
+        <h2>Search Functionality</h2>
+        
+        <div class="feature-highlight">
+            <h3>Search Capabilities</h3>
+            <p>The user search function allows you to find customers quickly using:</p>
+            <ul>
+                <li><strong>Full Name:</strong> Search by complete or partial name</li>
+                <li><strong>Email Address:</strong> Find users by their email</li>
+                <li><strong>Phone Number:</strong> Search using contact numbers</li>
+            </ul>
+        </div>
+
+        <div class="step-box">
+            <h4>How to Search for Users:</h4>
+            <ol>
+                <li>Locate the search bar at the top of the user management page</li>
+                <li>Type any part of the customer's name, email, or phone number</li>
+                <li>Search is case-insensitive and works with partial matches</li>
+                <li>Results filter automatically as you type</li>
+                <li>Clear the search field to show all users</li>
+            </ol>
+        </div>
+
+        <div class="info-box">
+            <strong>Search Examples:</strong>
+            <ul>
+                <li>Type "john" to find all users with "John" in their name</li>
+                <li>Type "@gmail" to find all Gmail users</li>
+                <li>Type "987" to find users with phone numbers containing "987"</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>User Profile Details</h2>
+        
+        <h3>Viewing User Profiles</h3>
+        <div class="step-box">
+            <ol>
+                <li>Click "View Profile" button next to any user</li>
+                <li>User detail modal opens with comprehensive information</li>
+                <li>Review all profile data and order history</li>
+                <li>Use this information for customer service inquiries</li>
+            </ol>
+        </div>
+
+        <h3>Profile Information Includes:</h3>
+        <table>
+            <tr>
+                <th>Section</th>
+                <th>Information</th>
+                <th>Usage</th>
+            </tr>
+            <tr>
+                <td>Basic Info</td>
+                <td>Name, email, phone, registration date</td>
+                <td>Customer identification and contact</td>
+            </tr>
+            <tr>
+                <td>Account Status</td>
+                <td>Active/inactive status</td>
+                <td>Account management and access control</td>
+            </tr>
+            <tr>
+                <td>Profile Picture</td>
+                <td>Customer uploaded avatar</td>
+                <td>Visual identification</td>
+            </tr>
+            <tr>
+                <td>Order History</td>
+                <td>List of all orders placed by customer</td>
+                <td>Service history and customer behavior analysis</td>
+            </tr>
+            <tr>
+                <td>Activity Timeline</td>
+                <td>Recent account activities</td>
+                <td>Customer engagement tracking</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="chapter">
+        <h2>User Account Management</h2>
+        
+        <h3>Editing User Profiles</h3>
+        <div class="step-box">
+            <h4>How to Edit User Information:</h4>
+            <ol>
+                <li>Click "Edit" button next to any user</li>
+                <li>Edit user modal opens with editable fields</li>
+                <li>Modify necessary information (name, email, phone)</li>
+                <li>Click "Save Changes" to update the profile</li>
+                <li>Changes are immediately reflected in the system</li>
+            </ol>
+        </div>
+
+        <div class="warning-box">
+            <strong>Editable Fields:</strong>
+            <ul>
+                <li>Full Name (first name and last name)</li>
+                <li>Email Address (ensure valid format)</li>
+                <li>Phone Number (include country code)</li>
+                <li>Account Status (Active/Inactive)</li>
+            </ul>
+        </div>
+
+        <h3>Account Status Management</h3>
+        <table>
+            <tr>
+                <th>Status</th>
+                <th>Description</th>
+                <th>Impact</th>
+                <th>When to Use</th>
+            </tr>
+            <tr>
+                <td>Active</td>
+                <td>Normal functioning account</td>
+                <td>User can place orders and use all features</td>
+                <td>Default status for all users</td>
+            </tr>
+            <tr>
+                <td>Inactive</td>
+                <td>Temporarily disabled account</td>
+                <td>User cannot place new orders</td>
+                <td>Temporary suspension or account issues</td>
+            </tr>
+            <tr>
+                <td>Blocked</td>
+                <td>Permanently restricted account</td>
+                <td>Complete access restriction</td>
+                <td>Policy violations or fraudulent activity</td>
+            </tr>
+        </table>
+
+        <div class="step-box">
+            <h4>How to Block/Unblock Users:</h4>
+            <ol>
+                <li>Click the action menu next to a user</li>
+                <li>Select "Block User" or "Unblock User"</li>
+                <li>Confirm the action in the popup dialog</li>
+                <li>User status updates immediately</li>
+                <li>Blocked users receive notification via mobile app</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Customer Service Use Cases</h2>
+        
+        <h3>Common Customer Inquiries</h3>
+        
+        <div class="step-box">
+            <h4>Scenario 1: Customer Can't Remember Order Details</h4>
+            <ol>
+                <li>Search for customer using name, email, or phone</li>
+                <li>Open their profile to view order history</li>
+                <li>Identify the relevant order from the list</li>
+                <li>Provide order status and details to customer</li>
+                <li>Navigate to Orders page for detailed order management if needed</li>
+            </ol>
+        </div>
+
+        <div class="step-box">
+            <h4>Scenario 2: Customer Contact Information Update</h4>
+            <ol>
+                <li>Find customer profile using existing information</li>
+                <li>Click "Edit" to open the edit modal</li>
+                <li>Update phone number or email address</li>
+                <li>Save changes to ensure future communications reach customer</li>
+                <li>Inform customer that updates are complete</li>
+            </ol>
+        </div>
+
+        <div class="step-box">
+            <h4>Scenario 3: Account Issues or Complaints</h4>
+            <ol>
+                <li>Locate customer profile quickly using search</li>
+                <li>Review their complete order history for context</li>
+                <li>Check for any pattern of issues or complaints</li>
+                <li>Take appropriate action (edit profile, contact customer, escalate)</li>
+                <li>Document resolution in customer notes if available</li>
+            </ol>
+        </div>
+
+        <div class="step-box">
+            <h4>Scenario 4: Suspicious Activity or Policy Violations</h4>
+            <ol>
+                <li>Review customer's complete profile and order history</li>
+                <li>Analyze patterns of behavior or order anomalies</li>
+                <li>If necessary, change account status to "Inactive" temporarily</li>
+                <li>For serious violations, block the user account</li>
+                <li>Document the reasons for action taken</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Customer Analytics and Insights</h2>
+        
+        <h3>User Behavior Analysis</h3>
+        <p>Use the user management section to gather insights about your customer base:</p>
+
+        <div class="feature-highlight">
+            <h4>Key Metrics to Track:</h4>
+            <ul>
+                <li><strong>Registration Trends:</strong> Monitor new user sign-ups over time</li>
+                <li><strong>Customer Retention:</strong> Identify repeat customers from order history</li>
+                <li><strong>Service Preferences:</strong> Analyze most popular service types per customer</li>
+                <li><strong>Geographic Distribution:</strong> Review customer locations for service planning</li>
+                <li><strong>Contact Preferences:</strong> Ensure communication channels are up to date</li>
+            </ul>
+        </div>
+
+        <h3>Customer Segmentation</h3>
+        <table>
+            <tr>
+                <th>Customer Type</th>
+                <th>Characteristics</th>
+                <th>Management Strategy</th>
+            </tr>
+            <tr>
+                <td>New Customers</td>
+                <td>Recently registered, first-time users</td>
+                <td>Focus on onboarding and first order experience</td>
+            </tr>
+            <tr>
+                <td>Regular Customers</td>
+                <td>Multiple orders, consistent usage</td>
+                <td>Maintain service quality, offer loyalty benefits</td>
+            </tr>
+            <tr>
+                <td>Inactive Customers</td>
+                <td>Registered but no recent orders</td>
+                <td>Re-engagement campaigns, service improvements</td>
+            </tr>
+            <tr>
+                <td>High-Value Customers</td>
+                <td>Frequent large orders, high spending</td>
+                <td>Premium service, dedicated support</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="chapter">
+        <h2>Data Privacy and Security</h2>
+        
+        <div class="warning-box">
+            <h3>Important Privacy Guidelines:</h3>
+            <ul>
+                <li><strong>Data Protection:</strong> Customer information is confidential and should only be accessed for legitimate business purposes</li>
+                <li><strong>Information Sharing:</strong> Never share customer details with unauthorized parties</li>
+                <li><strong>Access Control:</strong> Only view customer data when necessary for customer service or business operations</li>
+                <li><strong>Update Accuracy:</strong> Ensure all profile updates are accurate and verified</li>
+            </ul>
+        </div>
+
+        <h3>Security Best Practices</h3>
+        <ul>
+            <li>Always verify customer identity before discussing account details</li>
+            <li>Use secure communication channels for sensitive information</li>
+            <li>Log out of admin portal when not in use</li>
+            <li>Report any suspicious account activity immediately</li>
+            <li>Keep customer data confidential and secure</li>
+        </ul>
+    </div>
+
+    <div class="chapter">
+        <h2>Integration with Order Management</h2>
+        
+        <p>User Management is closely integrated with Order Management for comprehensive customer service:</p>
+
+        <div class="step-box">
+            <h4>Cross-Reference Workflow:</h4>
+            <ol>
+                <li><strong>From Users to Orders:</strong> Click on a customer to view their order history, then navigate to specific orders for detailed management</li>
+                <li><strong>From Orders to Users:</strong> When viewing an order, click on customer information to access their complete profile</li>
+                <li><strong>Customer Service:</strong> Use both sections together to provide comprehensive customer support</li>
+                <li><strong>Issue Resolution:</strong> Track customer issues across both profile management and order history</li>
+            </ol>
+        </div>
+
+        <div class="info-box">
+            <strong>Workflow Tip:</strong> Keep both Users and Orders tabs open in separate browser tabs for efficient customer service operations.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Troubleshooting User Management Issues</h2>
+
+        <div class="warning-box">
+            <strong>Issue:</strong> Cannot find a specific customer<br>
+            <strong>Solutions:</strong>
+            <ul>
+                <li>Try searching with partial information (first name only, partial email)</li>
+                <li>Check for spelling variations or typos</li>
+                <li>Verify the customer has actually registered in the system</li>
+                <li>Clear search filters and browse the full user list</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <strong>Issue:</strong> Customer information appears outdated<br>
+            <strong>Solutions:</strong>
+            <ul>
+                <li>Check if customer updated their profile recently via mobile app</li>
+                <li>Refresh the page to load latest information</li>
+                <li>Manually update information if verified with customer</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <strong>Issue:</strong> Cannot edit user profile<br>
+            <strong>Solutions:</strong>
+            <ul>
+                <li>Ensure you have appropriate admin permissions</li>
+                <li>Check that all required fields are properly filled</li>
+                <li>Verify email format is valid</li>
+                <li>Try refreshing the page and attempting edit again</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Best Practices for User Management</h2>
+
+        <h3>Daily Operations</h3>
+        <ul>
+            <li><strong>Regular Reviews:</strong> Periodically review new user registrations</li>
+            <li><strong>Data Quality:</strong> Ensure customer contact information is accurate and up-to-date</li>
+            <li><strong>Customer Service:</strong> Use profile information to provide personalized service</li>
+            <li><strong>Issue Tracking:</strong> Monitor customer complaints and resolution patterns</li>
+        </ul>
+
+        <h3>Long-term Strategy</h3>
+        <ul>
+            <li><strong>Customer Retention:</strong> Identify and engage inactive customers</li>
+            <li><strong>Service Improvement:</strong> Use customer feedback to enhance service quality</li>
+            <li><strong>Growth Planning:</strong> Analyze customer demographics for business expansion</li>
+            <li><strong>Quality Assurance:</strong> Regular audit of customer data accuracy</li>
+        </ul>
+
+        <div class="step-box">
+            <h4>Weekly User Management Checklist:</h4>
+            <ul>
+                <li>Review new customer registrations</li>
+                <li>Update any customer information requests</li>
+                <li>Check for inactive accounts that need attention</li>
+                <li>Verify contact information accuracy</li>
+                <li>Monitor customer service resolution rates</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

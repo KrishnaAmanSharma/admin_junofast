@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Troubleshooting Guide - Juno Fast Admin Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .header {
+            background: linear-gradient(135deg, #2563eb, #059669);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .chapter {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 2.5em; margin: 0; }
+        h2 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+        h3 { color: #059669; }
+        .problem-box {
+            background: #fef2f2;
+            border: 1px solid #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .solution-box {
+            background: #f0fdf4;
+            border: 1px solid #059669;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #d97706;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #d1d5db;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f3f4f6;
+            font-weight: bold;
+        }
+        .quick-fix {
+            background: #f0f9ff;
+            border-left: 4px solid #2563eb;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔧 Troubleshooting Guide</h1>
+        <p>Common Issues and Step-by-Step Solutions</p>
+    </div>
+
+    <div class="chapter">
+        <h2>Overview</h2>
+        <p>This troubleshooting guide provides solutions to common issues you may encounter while using the Juno Fast Admin Portal. Each problem includes detailed symptoms, causes, and step-by-step resolution procedures.</p>
+        
+        <div class="info-box">
+            <strong>Emergency Contact:</strong> For critical system issues that cannot be resolved using this guide, escalate to technical support immediately with detailed error descriptions.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Login and Access Issues</h2>
+        
+        <div class="problem-box">
+            <h3>Problem: Cannot Access Admin Portal</h3>
+            <strong>Symptoms:</strong> Login page not loading, blank screen, connection errors
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Check Internet Connection:</strong> Verify stable internet connectivity</li>
+                <li><strong>Clear Browser Cache:</strong> Clear cache and cookies for the portal URL</li>
+                <li><strong>Try Different Browser:</strong> Test with Chrome, Firefox, or Safari</li>
+                <li><strong>Disable Extensions:</strong> Temporarily disable browser extensions/ad blockers</li>
+                <li><strong>Check URL:</strong> Ensure you're using the correct portal URL</li>
+                <li><strong>Private/Incognito Mode:</strong> Try accessing in private browsing mode</li>
+            </ol>
+        </div>
+
+        <div class="problem-box">
+            <h3>Problem: Login Credentials Not Working</h3>
+            <strong>Symptoms:</strong> "Invalid credentials" error, login page keeps returning
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Verify Credentials:</strong> Double-check username and password spelling</li>
+                <li><strong>Caps Lock Check:</strong> Ensure Caps Lock is not enabled</li>
+                <li><strong>Password Reset:</strong> Use password reset function if available</li>
+                <li><strong>Account Status:</strong> Contact administrator to verify account is active</li>
+                <li><strong>Time Sync:</strong> Ensure system clock is accurate</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Dashboard and Data Loading Issues</h2>
+        
+        <div class="problem-box">
+            <h3>Problem: Dashboard Metrics Not Loading</h3>
+            <strong>Symptoms:</strong> Zero values displayed, loading indicators stuck, blank metric cards
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Page Refresh:</strong> Press F5 or Ctrl+R to refresh the page</li>
+                <li><strong>Wait for Load:</strong> Allow 10-15 seconds for data to populate</li>
+                <li><strong>Check Network:</strong> Verify stable internet connection</li>
+                <li><strong>Browser Console:</strong> Check for JavaScript errors (F12 → Console)</li>
+                <li><strong>Time Range:</strong> Verify if there's actual data for the displayed period</li>
+            </ol>
+        </div>
+
+        <div class="problem-box">
+            <h3>Problem: Recent Orders Not Appearing</h3>
+            <strong>Symptoms:</strong> Empty orders table, "No orders requiring attention" message when orders exist
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Status Check:</strong> Verify orders have "Pending" status</li>
+                <li><strong>Data Sync:</strong> Refresh page to sync latest data</li>
+                <li><strong>Filter Reset:</strong> Clear any applied filters</li>
+                <li><strong>Order Status:</strong> Check if orders were recently updated to non-pending status</li>
+                <li><strong>Date Range:</strong> Ensure orders are within expected time range</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Order Management Issues</h2>
+        
+        <div class="problem-box">
+            <h3>Problem: Cannot Edit Order Price</h3>
+            <strong>Symptoms:</strong> Price fields are disabled/grayed out, changes not saving
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Status Verification:</strong> Ensure order status is "Pending" or "Price Updated"</li>
+                <li><strong>Field Permissions:</strong> Verify you have admin editing rights</li>
+                <li><strong>Order Lock:</strong> Check if order is being edited by another user</li>
+                <li><strong>Data Validation:</strong> Ensure price values are in correct format</li>
+                <li><strong>System Rules:</strong> Confirm order hasn't exceeded editing time limits</li>
+            </ol>
+        </div>
+
+        <div class="problem-box">
+            <h3>Problem: Order Details Not Loading</h3>
+            <strong>Symptoms:</strong> Modal window blank, loading spinner stuck, incomplete information
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Close and Reopen:</strong> Close modal and click order again</li>
+                <li><strong>Page Refresh:</strong> Refresh entire page and try again</li>
+                <li><strong>Browser Check:</strong> Try different browser or incognito mode</li>
+                <li><strong>Network Speed:</strong> Check for slow internet connection</li>
+                <li><strong>Order ID:</strong> Verify order exists and isn't corrupted</li>
+            </ol>
+        </div>
+
+        <div class="problem-box">
+            <h3>Problem: Search Function Not Working</h3>
+            <strong>Symptoms:</strong> No results for known orders, search returning empty lists
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Search Terms:</strong> Try partial matches instead of complete terms</li>
+                <li><strong>Filter Reset:</strong> Clear all filters before searching</li>
+                <li><strong>Case Sensitivity:</strong> Try different capitalizations</li>
+                <li><strong>Special Characters:</strong> Remove special characters from search</li>
+                <li><strong>Data Sync:</strong> Refresh page to ensure latest data is loaded</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>User Management Issues</h2>
+        
+        <div class="problem-box">
+            <h3>Problem: Customer Information Missing</h3>
+            <strong>Symptoms:</strong> Empty name fields, missing phone numbers, incomplete profiles
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Profile Sync:</strong> Check if customer updated mobile app profile</li>
+                <li><strong>Data Source:</strong> Verify information exists in customer database</li>
+                <li><strong>Manual Update:</strong> Edit profile with verified customer information</li>
+                <li><strong>Registration Status:</strong> Confirm customer completed full registration</li>
+                <li><strong>Data Migration:</strong> Check if profile data needs manual migration</li>
+            </ol>
+        </div>
+
+        <div class="problem-box">
+            <h3>Problem: Cannot Edit User Profile</h3>
+            <strong>Symptoms:</strong> Edit button not working, changes not saving, form validation errors
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Form Validation:</strong> Ensure all required fields are properly filled</li>
+                <li><strong>Email Format:</strong> Verify email address follows correct format</li>
+                <li><strong>Phone Number:</strong> Check phone number includes country code</li>
+                <li><strong>Character Limits:</strong> Ensure names don't exceed character limits</li>
+                <li><strong>Special Characters:</strong> Remove special characters that may cause issues</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>System Configuration Issues</h2>
+        
+        <div class="problem-box">
+            <h3>Problem: New Service Type Not Visible to Customers</h3>
+            <strong>Symptoms:</strong> Service created but not appearing in customer mobile app
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Status Check:</strong> Verify service type status is set to "Active"</li>
+                <li><strong>Save Confirmation:</strong> Ensure service was properly saved</li>
+                <li><strong>App Refresh:</strong> Ask customers to refresh mobile app</li>
+                <li><strong>Cache Clear:</strong> Clear system cache if applicable</li>
+                <li><strong>Configuration Review:</strong> Check all required fields are completed</li>
+            </ol>
+        </div>
+
+        <div class="problem-box">
+            <h3>Problem: Common Items Not Displaying</h3>
+            <strong>Symptoms:</strong> Items missing from customer selection, empty item lists
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Service Association:</strong> Verify items are linked to correct service types</li>
+                <li><strong>Item Status:</strong> Check item status is "Active" or "Available"</li>
+                <li><strong>Category Assignment:</strong> Ensure items have proper category assignments</li>
+                <li><strong>Image Loading:</strong> Verify item images are accessible</li>
+                <li><strong>Description Completeness:</strong> Check all required fields are filled</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Performance and Speed Issues</h2>
+        
+        <div class="problem-box">
+            <h3>Problem: Slow Page Loading</h3>
+            <strong>Symptoms:</strong> Pages take long time to load, timeouts, sluggish response
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Internet Speed:</strong> Test connection speed using speed test tools</li>
+                <li><strong>Browser Cache:</strong> Clear browser cache and temporary files</li>
+                <li><strong>Close Tabs:</strong> Close unnecessary browser tabs</li>
+                <li><strong>Browser Update:</strong> Ensure browser is updated to latest version</li>
+                <li><strong>System Resources:</strong> Close other applications consuming memory</li>
+                <li><strong>Peak Hours:</strong> Avoid usage during high-traffic periods if possible</li>
+            </ol>
+        </div>
+
+        <div class="problem-box">
+            <h3>Problem: Search Taking Too Long</h3>
+            <strong>Symptoms:</strong> Search results delayed, system appears frozen during search
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Narrow Search:</strong> Use more specific search terms</li>
+                <li><strong>Apply Filters:</strong> Use filters to reduce search scope</li>
+                <li><strong>Date Range:</strong> Limit search to specific date ranges</li>
+                <li><strong>Partial Terms:</strong> Use shorter, partial search terms</li>
+                <li><strong>System Load:</strong> Try searching during off-peak hours</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Customer Communication Issues</h2>
+        
+        <div class="problem-box">
+            <h3>Problem: Customer Not Receiving Status Updates</h3>
+            <strong>Symptoms:</strong> Customer reports no notifications, status changes not communicated
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Status Save:</strong> Verify status changes are being saved properly</li>
+                <li><strong>Customer App:</strong> Ask customer to check mobile app notifications</li>
+                <li><strong>Notification Settings:</strong> Verify customer has notifications enabled</li>
+                <li><strong>Contact Info:</strong> Ensure customer contact information is current</li>
+                <li><strong>Manual Contact:</strong> Contact customer directly to confirm receipt</li>
+            </ol>
+        </div>
+
+        <div class="problem-box">
+            <h3>Problem: Price Updates Not Reflecting for Customer</h3>
+            <strong>Symptoms:</strong> Customer sees old prices, price changes not visible in mobile app
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Save Verification:</strong> Confirm price updates were saved successfully</li>
+                <li><strong>Status Update:</strong> Change order status to "Price Updated"</li>
+                <li><strong>App Refresh:</strong> Ask customer to close and reopen mobile app</li>
+                <li><strong>Sync Delay:</strong> Allow 5-10 minutes for system synchronization</li>
+                <li><strong>Manual Notification:</strong> Contact customer directly about price changes</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Data Accuracy and Consistency Issues</h2>
+        
+        <div class="problem-box">
+            <h3>Problem: Order Information Inconsistent</h3>
+            <strong>Symptoms:</strong> Different information in different screens, data mismatches
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Page Refresh:</strong> Refresh all related pages</li>
+                <li><strong>Data Source:</strong> Verify which screen shows most recent data</li>
+                <li><strong>Update Timing:</strong> Check if updates are still processing</li>
+                <li><strong>Manual Sync:</strong> Log out and log back in to force data refresh</li>
+                <li><strong>Escalation:</strong> Report data inconsistency to technical support</li>
+            </ol>
+        </div>
+
+        <div class="problem-box">
+            <h3>Problem: Revenue Calculations Incorrect</h3>
+            <strong>Symptoms:</strong> Dashboard revenue doesn't match completed orders, calculation errors
+        </div>
+        
+        <div class="solution-box">
+            <h4>Solutions:</h4>
+            <ol>
+                <li><strong>Status Verification:</strong> Ensure orders marked as "Completed" have final prices</li>
+                <li><strong>Date Range:</strong> Check if calculations include correct time period</li>
+                <li><strong>Order Status:</strong> Verify only completed orders contribute to revenue</li>
+                <li><strong>Manual Calculation:</strong> Cross-check with manual calculation</li>
+                <li><strong>Data Refresh:</strong> Refresh dashboard to update calculations</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Emergency Procedures</h2>
+        
+        <h3>Critical System Failures</h3>
+        <div class="warning-box">
+            <h4>When System is Completely Down:</h4>
+            <ol>
+                <li><strong>Document Issue:</strong> Record exact time and symptoms</li>
+                <li><strong>Check Status:</strong> Verify if issue is local or system-wide</li>
+                <li><strong>Alternative Access:</strong> Try different devices/networks</li>
+                <li><strong>Escalate Immediately:</strong> Contact technical support with details</li>
+                <li><strong>Customer Communication:</strong> Prepare holding message for customers</li>
+                <li><strong>Manual Tracking:</strong> Use backup systems for critical orders</li>
+            </ol>
+        </div>
+
+        <h3>Data Loss or Corruption</h3>
+        <div class="warning-box">
+            <h4>If Data Appears Lost or Corrupted:</h4>
+            <ol>
+                <li><strong>Stop Actions:</strong> Immediately stop making changes</li>
+                <li><strong>Document State:</strong> Screenshot current state</li>
+                <li><strong>Don't Refresh:</strong> Avoid refreshing pages until instructed</li>
+                <li><strong>Immediate Escalation:</strong> Contact technical support urgently</li>
+                <li><strong>Backup Access:</strong> Use alternative data sources if available</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Prevention and Maintenance</h2>
+        
+        <h3>Preventive Measures</h3>
+        <div class="info-box">
+            <h4>Regular Maintenance Tasks:</h4>
+            <ul>
+                <li><strong>Daily:</strong> Clear browser cache and check system responsiveness</li>
+                <li><strong>Weekly:</strong> Update browser and check for system announcements</li>
+                <li><strong>Monthly:</strong> Review and update bookmarks, passwords</li>
+                <li><strong>Quarterly:</strong> Full system health check and user feedback review</li>
+            </ul>
+        </div>
+
+        <h3>Best Practices for Issue Prevention</h3>
+        <div class="quick-fix">
+            <h4>Proactive Strategies:</h4>
+            <ul>
+                <li><strong>Regular Saves:</strong> Save work frequently to prevent data loss</li>
+                <li><strong>Stable Connection:</strong> Use reliable internet connection</li>
+                <li><strong>Browser Maintenance:</strong> Keep browser updated and cache clear</li>
+                <li><strong>Data Verification:</strong> Double-check critical information before saving</li>
+                <li><strong>Backup Plans:</strong> Have alternative communication methods ready</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Quick Reference Guide</h2>
+        
+        <h3>Common Error Codes and Solutions</h3>
+        <table>
+            <tr>
+                <th>Error Type</th>
+                <th>Quick Solution</th>
+                <th>When to Escalate</th>
+            </tr>
+            <tr>
+                <td>Loading Timeout</td>
+                <td>Refresh page, check connection</td>
+                <td>If persistent after 3 attempts</td>
+            </tr>
+            <tr>
+                <td>Save Failed</td>
+                <td>Try again, check form validation</td>
+                <td>If data integrity is at risk</td>
+            </tr>
+            <tr>
+                <td>Access Denied</td>
+                <td>Log out and log back in</td>
+                <td>If login credentials are correct</td>
+            </tr>
+            <tr>
+                <td>Data Not Found</td>
+                <td>Verify search terms, refresh page</td>
+                <td>If known data is missing</td>
+            </tr>
+            <tr>
+                <td>System Slow</td>
+                <td>Close tabs, clear cache</td>
+                <td>If affecting business operations</td>
+            </tr>
+        </table>
+
+        <h3>Emergency Contact Information</h3>
+        <div class="warning-box">
+            <h4>When to Contact Support:</h4>
+            <ul>
+                <li><strong>Critical System Failure:</strong> Immediate escalation required</li>
+                <li><strong>Data Loss:</strong> Any suspected data corruption or loss</li>
+                <li><strong>Security Issues:</strong> Unauthorized access or suspicious activity</li>
+                <li><strong>Customer Impact:</strong> Issues affecting customer service delivery</li>
+                <li><strong>Persistent Problems:</strong> Issues not resolved by standard troubleshooting</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

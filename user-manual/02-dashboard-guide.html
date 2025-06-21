@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Guide - Juno Fast Admin Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .header {
+            background: linear-gradient(135deg, #2563eb, #059669);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .chapter {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 2.5em; margin: 0; }
+        h2 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+        h3 { color: #059669; }
+        .metric-card {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+            margin: 15px 0;
+        }
+        .step-box {
+            background: #f0fdf4;
+            border: 1px solid #059669;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #d97706;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        .screenshot-placeholder {
+            background: #e5e7eb;
+            border: 2px dashed #9ca3af;
+            padding: 40px;
+            text-align: center;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: #6b7280;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #d1d5db;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f3f4f6;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Dashboard Guide</h1>
+        <p>Understanding Your Business Metrics and Analytics</p>
+    </div>
+
+    <div class="chapter">
+        <h2>Overview</h2>
+        <p>The Dashboard is your central command center, providing real-time insights into your Juno Fast relocation business. It displays key performance indicators (KPIs) and recent orders that require immediate attention.</p>
+        
+        <div class="info-box">
+            <strong>Navigation:</strong> The Dashboard is the default landing page when you log into the admin portal. You can always return to it by clicking "Dashboard" in the left sidebar or the Juno Fast logo.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Key Metrics Cards</h2>
+        <p>The dashboard displays four primary business metrics in an easy-to-read card layout:</p>
+
+        <div class="metric-card">
+            <h3>📦 Total Orders</h3>
+            <p><strong>What it shows:</strong> The complete count of all orders ever placed in your system</p>
+            <p><strong>Calculation:</strong> Includes orders in all statuses (Pending, Confirmed, In Progress, Completed, Cancelled, etc.)</p>
+            <p><strong>Use case:</strong> Track overall business volume and growth over time</p>
+            <p><strong>Example:</strong> If you see "1,247" - this means 1,247 total orders have been placed since your business started</p>
+        </div>
+
+        <div class="metric-card">
+            <h3>💰 Total Revenue</h3>
+            <p><strong>What it shows:</strong> Total revenue generated from completed orders only</p>
+            <p><strong>Calculation:</strong> Sum of all orders with status "Completed" using the final price</p>
+            <p><strong>Use case:</strong> Monitor actual earned revenue and financial performance</p>
+            <p><strong>Example:</strong> "₹2,45,680" means you've earned this amount from completed orders</p>
+            <div class="warning-box">
+                <strong>Important:</strong> Only completed orders contribute to revenue. Pending or cancelled orders are not included.
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <h3>⏰ Active Orders</h3>
+            <p><strong>What it shows:</strong> Number of orders currently "In Progress"</p>
+            <p><strong>Calculation:</strong> Count of orders with status "In Progress"</p>
+            <p><strong>Use case:</strong> Monitor current workload and resource allocation</p>
+            <p><strong>Example:</strong> "23" means 23 orders are currently being executed</p>
+        </div>
+
+        <div class="metric-card">
+            <h3>👥 New Users</h3>
+            <p><strong>What it shows:</strong> Number of customers registered in the last 30 days</p>
+            <p><strong>Calculation:</strong> Count of profiles created within the last 30 days</p>
+            <p><strong>Use case:</strong> Track customer acquisition and marketing effectiveness</p>
+            <p><strong>Example:</strong> "45" means 45 new customers joined in the past month</p>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Recent Orders Requiring Attention</h2>
+        <p>Below the metrics cards, you'll find a table showing orders that need immediate action. This section displays the 5 most recent orders with "Pending" status.</p>
+
+        <h3>Table Columns Explained</h3>
+        <table>
+            <tr>
+                <th>Column</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+            <tr>
+                <td>Order ID</td>
+                <td>First 8 characters of the unique order identifier</td>
+                <td>#4620ea2c</td>
+            </tr>
+            <tr>
+                <td>Customer</td>
+                <td>Customer's full name from their profile</td>
+                <td>John Smith</td>
+            </tr>
+            <tr>
+                <td>Service</td>
+                <td>Type of relocation service requested</td>
+                <td>House Relocation</td>
+            </tr>
+            <tr>
+                <td>Status</td>
+                <td>Current order status with color coding</td>
+                <td>Pending (Yellow badge)</td>
+            </tr>
+            <tr>
+                <td>Action</td>
+                <td>View Details button to open full order information</td>
+                <td>👁 View Details</td>
+            </tr>
+        </table>
+
+        <div class="step-box">
+            <h3>How to Handle Pending Orders:</h3>
+            <ol>
+                <li>Click "View Details" for any pending order</li>
+                <li>Review the order information, pickup/drop locations, and customer requirements</li>
+                <li>Update the price if needed (only possible when status is "Pending")</li>
+                <li>Change status to "Confirmed" once you've reviewed and approved the order</li>
+                <li>Customer will be notified of status changes through the mobile app</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Status Badge Color System</h2>
+        <p>Orders are displayed with color-coded status badges for quick visual identification:</p>
+        
+        <table>
+            <tr>
+                <th>Status</th>
+                <th>Color</th>
+                <th>Meaning</th>
+                <th>Next Action</th>
+            </tr>
+            <tr>
+                <td>Pending</td>
+                <td>Yellow</td>
+                <td>Waiting for admin review</td>
+                <td>Review and confirm order</td>
+            </tr>
+            <tr>
+                <td>Confirmed</td>
+                <td>Green</td>
+                <td>Order approved by admin</td>
+                <td>Begin execution</td>
+            </tr>
+            <tr>
+                <td>In Progress</td>
+                <td>Blue</td>
+                <td>Currently being executed</td>
+                <td>Monitor progress</td>
+            </tr>
+            <tr>
+                <td>Completed</td>
+                <td>Green</td>
+                <td>Successfully finished</td>
+                <td>No action needed</td>
+            </tr>
+            <tr>
+                <td>Cancelled</td>
+                <td>Red</td>
+                <td>Order was cancelled</td>
+                <td>No action needed</td>
+            </tr>
+            <tr>
+                <td>Price Updated</td>
+                <td>Orange</td>
+                <td>Waiting for customer price approval</td>
+                <td>Wait for customer response</td>
+            </tr>
+            <tr>
+                <td>Price Accepted</td>
+                <td>Green</td>
+                <td>Customer approved the updated price</td>
+                <td>Proceed with order</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="chapter">
+        <h2>Best Practices for Dashboard Usage</h2>
+        
+        <div class="step-box">
+            <h3>Daily Routine Recommendations:</h3>
+            <ol>
+                <li><strong>Morning Check:</strong> Start your day by reviewing the dashboard metrics</li>
+                <li><strong>Pending Orders:</strong> Address all pending orders in the attention section</li>
+                <li><strong>Revenue Tracking:</strong> Monitor daily revenue growth and completed orders</li>
+                <li><strong>Resource Planning:</strong> Use active orders count to plan team workload</li>
+                <li><strong>Customer Growth:</strong> Track new user registrations for marketing insights</li>
+            </ol>
+        </div>
+
+        <div class="warning-box">
+            <strong>Critical Actions:</strong>
+            <ul>
+                <li>Always address pending orders within 2-4 hours during business hours</li>
+                <li>Check for orders with "Price Updated" status - customers are waiting for your response</li>
+                <li>Monitor active orders to ensure proper resource allocation</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Troubleshooting Dashboard Issues</h2>
+        
+        <h3>Common Issues and Solutions:</h3>
+        
+        <div class="info-box">
+            <strong>Issue:</strong> Metrics showing zero or incorrect values<br>
+            <strong>Solution:</strong> Refresh the page. If problem persists, check your internet connection and try again.
+        </div>
+
+        <div class="info-box">
+            <strong>Issue:</strong> No orders appearing in attention section<br>
+            <strong>Solution:</strong> This is normal if no orders have "Pending" status. Check the Orders page for complete order list.
+        </div>
+
+        <div class="info-box">
+            <strong>Issue:</strong> Revenue not updating after completing an order<br>
+            <strong>Solution:</strong> Ensure the order status is changed to "Completed" and the page is refreshed.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Understanding Business Performance</h2>
+        
+        <h3>Key Performance Indicators (KPIs) to Monitor:</h3>
+        <ul>
+            <li><strong>Order Completion Rate:</strong> Compare Total Orders vs Revenue-generating orders</li>
+            <li><strong>Customer Acquisition:</strong> Track new users month-over-month</li>
+            <li><strong>Operational Efficiency:</strong> Monitor active orders vs available resources</li>
+            <li><strong>Average Order Value:</strong> Divide total revenue by completed orders</li>
+        </ul>
+
+        <div class="step-box">
+            <strong>Example Analysis:</strong>
+            If you have 100 total orders, ₹50,000 revenue, 15 active orders, and 20 new users:
+            <ul>
+                <li>Completion rate: Approximately 50% (if revenue represents ~50 completed orders)</li>
+                <li>Average order value: ₹1,000 per completed order</li>
+                <li>Current workload: 15 orders in progress</li>
+                <li>Growth: 20 new customers acquired recently</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

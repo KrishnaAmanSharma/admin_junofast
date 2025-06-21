@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Configuration - Juno Fast Admin Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .header {
+            background: linear-gradient(135deg, #2563eb, #059669);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .chapter {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 2.5em; margin: 0; }
+        h2 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+        h3 { color: #059669; }
+        .step-box {
+            background: #f0fdf4;
+            border: 1px solid #059669;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #d97706;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .critical-box {
+            background: #fef2f2;
+            border: 1px solid #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .feature-highlight {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+            margin: 15px 0;
+        }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #d1d5db;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f3f4f6;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚙️ System Configuration</h1>
+        <p>Service Setup and Business Rules Management</p>
+    </div>
+
+    <div class="chapter">
+        <h2>Overview</h2>
+        <p>System Configuration allows you to customize and manage the core components of your Juno Fast relocation business. This section covers service types, common items catalog, and service-specific questions that shape the customer experience and operational workflow.</p>
+        
+        <div class="critical-box">
+            <strong>Important:</strong> Configuration changes directly impact customer experience through the mobile app. Always test thoroughly before implementing changes.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Service Types Management</h2>
+        
+        <h3>Understanding Service Types</h3>
+        <p>Service Types define the different categories of relocation services you offer. Each service type can have its own pricing structure, questions, and common items.</p>
+
+        <table>
+            <tr>
+                <th>Default Service Types</th>
+                <th>Description</th>
+                <th>Target Customers</th>
+            </tr>
+            <tr>
+                <td>House Relocation</td>
+                <td>Complete household moving services</td>
+                <td>Families, individuals moving homes</td>
+            </tr>
+            <tr>
+                <td>Office Relocation</td>
+                <td>Commercial business moves</td>
+                <td>Companies, startups, corporate offices</td>
+            </tr>
+            <tr>
+                <td>Vehicle Transportation</td>
+                <td>Car and motorcycle shipping</td>
+                <td>Vehicle owners relocating</td>
+            </tr>
+            <tr>
+                <td>Pet Relocation</td>
+                <td>Safe pet transportation</td>
+                <td>Pet owners moving with animals</td>
+            </tr>
+            <tr>
+                <td>Industrial Shipment</td>
+                <td>Heavy machinery and equipment</td>
+                <td>Factories, industrial companies</td>
+            </tr>
+            <tr>
+                <td>Events & Exhibitions</td>
+                <td>Event equipment handling</td>
+                <td>Event organizers, exhibition companies</td>
+            </tr>
+            <tr>
+                <td>PG Relocation</td>
+                <td>Paying guest moves</td>
+                <td>Students, working professionals</td>
+            </tr>
+        </table>
+
+        <h3>Managing Service Types</h3>
+        <div class="step-box">
+            <h4>Adding a New Service Type:</h4>
+            <ol>
+                <li>Navigate to "Service Types" in the left sidebar</li>
+                <li>Click "Add Service Type" button</li>
+                <li>Fill in service name and description</li>
+                <li>Set base pricing if applicable</li>
+                <li>Define service-specific requirements</li>
+                <li>Save the new service type</li>
+                <li>Customers will see this option in their mobile app</li>
+            </ol>
+        </div>
+
+        <div class="step-box">
+            <h4>Editing Existing Service Types:</h4>
+            <ol>
+                <li>Find the service type in the list</li>
+                <li>Click "Edit" button next to the service</li>
+                <li>Modify name, description, or pricing</li>
+                <li>Update any business rules or requirements</li>
+                <li>Save changes to apply immediately</li>
+            </ol>
+        </div>
+
+        <div class="warning-box">
+            <strong>Caution:</strong> Editing service types affects active orders. Ensure changes don't disrupt ongoing operations.
+        </div>
+
+        <h3>Service Type Configuration Fields</h3>
+        <table>
+            <tr>
+                <th>Field</th>
+                <th>Purpose</th>
+                <th>Example</th>
+            </tr>
+            <tr>
+                <td>Service Name</td>
+                <td>Display name for customers</td>
+                <td>"Premium House Relocation"</td>
+            </tr>
+            <tr>
+                <td>Description</td>
+                <td>Detailed service explanation</td>
+                <td>"Complete household moving with packing"</td>
+            </tr>
+            <tr>
+                <td>Base Price</td>
+                <td>Starting price for estimation</td>
+                <td>₹5,000</td>
+            </tr>
+            <tr>
+                <td>Service Category</td>
+                <td>Internal classification</td>
+                <td>Residential, Commercial, Specialized</td>
+            </tr>
+            <tr>
+                <td>Availability</td>
+                <td>Service availability status</td>
+                <td>Active, Inactive, Seasonal</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="chapter">
+        <h2>Common Items Catalog</h2>
+        
+        <h3>Purpose of Common Items</h3>
+        <p>Common Items are pre-defined objects that customers can select when placing orders. This standardizes item lists, improves estimation accuracy, and speeds up the order process.</p>
+
+        <div class="feature-highlight">
+            <h4>Benefits of Common Items:</h4>
+            <ul>
+                <li><strong>Faster Order Process:</strong> Customers select from predefined lists</li>
+                <li><strong>Accurate Pricing:</strong> Standard items have known weights and handling requirements</li>
+                <li><strong>Operational Efficiency:</strong> Teams know exactly what to expect</li>
+                <li><strong>Inventory Planning:</strong> Better resource allocation and planning</li>
+            </ul>
+        </div>
+
+        <h3>Managing Common Items</h3>
+        <div class="step-box">
+            <h4>Adding New Common Items:</h4>
+            <ol>
+                <li>Navigate to "Common Items" page</li>
+                <li>Click "Add Item" button</li>
+                <li>Enter item name and description</li>
+                <li>Assign to appropriate service type(s)</li>
+                <li>Set weight, size, and handling requirements</li>
+                <li>Add item image if available</li>
+                <li>Save the item to make it available for orders</li>
+            </ol>
+        </div>
+
+        <h3>Common Item Categories</h3>
+        <table>
+            <tr>
+                <th>Category</th>
+                <th>Example Items</th>
+                <th>Service Types</th>
+            </tr>
+            <tr>
+                <td>Furniture</td>
+                <td>Sofa, Dining Table, Bed, Wardrobe</td>
+                <td>House Relocation, Office Relocation</td>
+            </tr>
+            <tr>
+                <td>Appliances</td>
+                <td>Refrigerator, Washing Machine, TV, AC</td>
+                <td>House Relocation</td>
+            </tr>
+            <tr>
+                <td>Electronics</td>
+                <td>Laptop, Desktop, Printer, Scanner</td>
+                <td>Office Relocation, House Relocation</td>
+            </tr>
+            <tr>
+                <td>Personal Items</td>
+                <td>Clothes, Books, Kitchenware</td>
+                <td>House Relocation, PG Relocation</td>
+            </tr>
+            <tr>
+                <td>Office Equipment</td>
+                <td>Office Chair, Desk, Filing Cabinet</td>
+                <td>Office Relocation</td>
+            </tr>
+            <tr>
+                <td>Vehicles</td>
+                <td>Car, Motorcycle, Bicycle</td>
+                <td>Vehicle Transportation</td>
+            </tr>
+        </table>
+
+        <div class="step-box">
+            <h4>Item Configuration Best Practices:</h4>
+            <ul>
+                <li><strong>Clear Names:</strong> Use descriptive, easily understood names</li>
+                <li><strong>Accurate Descriptions:</strong> Include size, weight, and special handling notes</li>
+                <li><strong>Service Association:</strong> Link items to relevant service types only</li>
+                <li><strong>Regular Updates:</strong> Keep the catalog current with customer needs</li>
+                <li><strong>Image Quality:</strong> Use clear, representative images for better customer experience</li>
+            </ul>
+        </div>
+
+        <h3>Filtering and Organization</h3>
+        <div class="info-box">
+            <strong>Filter Options:</strong>
+            <ul>
+                <li><strong>By Service Type:</strong> Show items relevant to specific services</li>
+                <li><strong>By Category:</strong> Group similar items together</li>
+                <li><strong>By Usage:</strong> Sort by most frequently selected items</li>
+                <li><strong>Search Function:</strong> Find specific items quickly</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Service Questions Configuration</h2>
+        
+        <h3>Understanding Service Questions</h3>
+        <p>Service Questions gather specific information from customers to provide accurate quotes and proper service delivery. Each service type can have customized questions.</p>
+
+        <h3>Question Types Available</h3>
+        <table>
+            <tr>
+                <th>Type</th>
+                <th>Purpose</th>
+                <th>Example Usage</th>
+            </tr>
+            <tr>
+                <td>Text</td>
+                <td>Open-ended responses</td>
+                <td>"Describe any fragile items"</td>
+            </tr>
+            <tr>
+                <td>Number</td>
+                <td>Numerical values</td>
+                <td>"How many rooms?" "Current floor number?"</td>
+            </tr>
+            <tr>
+                <td>Date</td>
+                <td>Date selection</td>
+                <td>"Preferred moving date"</td>
+            </tr>
+            <tr>
+                <td>Boolean</td>
+                <td>Yes/No questions</td>
+                <td>"Do you need packing services?"</td>
+            </tr>
+            <tr>
+                <td>Choice</td>
+                <td>Multiple choice options</td>
+                <td>"Building type: Apartment/Villa/Office"</td>
+            </tr>
+        </table>
+
+        <h3>Creating Service Questions</h3>
+        <div class="step-box">
+            <h4>Adding New Questions:</h4>
+            <ol>
+                <li>Go to "Service Questions" section</li>
+                <li>Click "Add Question" button</li>
+                <li>Select question type (text, number, date, boolean, choice)</li>
+                <li>Write clear, specific question text</li>
+                <li>Assign to relevant service type(s)</li>
+                <li>Set as required or optional</li>
+                <li>For choice questions, add all possible options</li>
+                <li>Save question to make it available for orders</li>
+            </ol>
+        </div>
+
+        <h3>Service-Specific Question Examples</h3>
+        
+        <div class="feature-highlight">
+            <h4>House Relocation Questions:</h4>
+            <ul>
+                <li>"How many bedrooms?" (Number)</li>
+                <li>"Do you need packing services?" (Boolean)</li>
+                <li>"Any fragile or valuable items?" (Text)</li>
+                <li>"Current floor number?" (Number)</li>
+                <li>"Is elevator available?" (Boolean)</li>
+                <li>"Preferred moving date?" (Date)</li>
+            </ul>
+        </div>
+
+        <div class="feature-highlight">
+            <h4>Office Relocation Questions:</h4>
+            <ul>
+                <li>"Number of employees?" (Number)</li>
+                <li>"Do you have server equipment?" (Boolean)</li>
+                <li>"Office size in sq ft?" (Number)</li>
+                <li>"Need after-hours service?" (Boolean)</li>
+                <li>"Special IT equipment handling required?" (Text)</li>
+            </ul>
+        </div>
+
+        <div class="feature-highlight">
+            <h4>Vehicle Transportation Questions:</h4>
+            <ul>
+                <li>"Vehicle type?" (Choice: Car/Motorcycle/Truck)</li>
+                <li>"Vehicle running condition?" (Choice: Running/Non-running)</li>
+                <li>"Any modifications or damage?" (Text)</li>
+                <li>"Insurance coverage needed?" (Boolean)</li>
+            </ul>
+        </div>
+
+        <h3>Question Logic and Dependencies</h3>
+        <div class="info-box">
+            <strong>Advanced Features:</strong>
+            <ul>
+                <li><strong>Conditional Questions:</strong> Show follow-up questions based on previous answers</li>
+                <li><strong>Required Fields:</strong> Mark critical questions as mandatory</li>
+                <li><strong>Question Ordering:</strong> Arrange questions in logical sequence</li>
+                <li><strong>Help Text:</strong> Provide guidance for complex questions</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Configuration Workflow and Best Practices</h2>
+        
+        <h3>Initial Setup Workflow</h3>
+        <div class="step-box">
+            <h4>Setting Up a New Service Type:</h4>
+            <ol>
+                <li><strong>Plan Service:</strong> Define service scope, target customers, pricing model</li>
+                <li><strong>Create Service Type:</strong> Add basic service information</li>
+                <li><strong>Design Questions:</strong> Create relevant questions for accurate quoting</li>
+                <li><strong>Build Item Catalog:</strong> Add common items specific to this service</li>
+                <li><strong>Test Flow:</strong> Use test orders to verify customer experience</li>
+                <li><strong>Train Team:</strong> Ensure operations team understands new service</li>
+                <li><strong>Launch:</strong> Make service available to customers</li>
+            </ol>
+        </div>
+
+        <h3>Ongoing Maintenance</h3>
+        <div class="step-box">
+            <h4>Regular Maintenance Tasks:</h4>
+            <ul>
+                <li><strong>Weekly:</strong> Review new item requests from customers</li>
+                <li><strong>Monthly:</strong> Analyze question effectiveness and update as needed</li>
+                <li><strong>Quarterly:</strong> Review service performance and pricing</li>
+                <li><strong>Annually:</strong> Complete service catalog audit and refresh</li>
+            </ul>
+        </div>
+
+        <h3>Data-Driven Configuration</h3>
+        <div class="info-box">
+            <strong>Use Analytics to Improve Configuration:</strong>
+            <ul>
+                <li><strong>Question Analysis:</strong> Review which questions provide most value for quotes</li>
+                <li><strong>Item Usage:</strong> Track most/least selected common items</li>
+                <li><strong>Service Demand:</strong> Monitor which services are most popular</li>
+                <li><strong>Customer Feedback:</strong> Incorporate suggestions for new items or questions</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Integration with Order Management</h2>
+        
+        <h3>How Configuration Affects Orders</h3>
+        <p>System configuration directly impacts the order management process:</p>
+
+        <table>
+            <tr>
+                <th>Configuration Element</th>
+                <th>Impact on Orders</th>
+                <th>Order Management Benefit</th>
+            </tr>
+            <tr>
+                <td>Service Types</td>
+                <td>Determines available services for customers</td>
+                <td>Clear service categorization and pricing</td>
+            </tr>
+            <tr>
+                <td>Common Items</td>
+                <td>Provides standardized item selection</td>
+                <td>Accurate weight/volume estimation</td>
+            </tr>
+            <tr>
+                <td>Service Questions</td>
+                <td>Gathers required information upfront</td>
+                <td>Complete order details for proper execution</td>
+            </tr>
+        </table>
+
+        <div class="step-box">
+            <h4>Configuration-Order Workflow:</h4>
+            <ol>
+                <li>Customer selects service type (configured in Service Types)</li>
+                <li>System shows relevant questions (configured in Service Questions)</li>
+                <li>Customer selects items (from Common Items catalog)</li>
+                <li>Order created with all necessary information</li>
+                <li>Admin reviews order with complete context</li>
+                <li>Accurate pricing possible due to detailed information</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Security and Access Control</h2>
+        
+        <div class="critical-box">
+            <h3>Important Security Considerations:</h3>
+            <ul>
+                <li><strong>Admin Only:</strong> Only authorized administrators should modify configuration</li>
+                <li><strong>Change Tracking:</strong> Document all configuration changes with reasons</li>
+                <li><strong>Backup:</strong> Maintain backups before making significant changes</li>
+                <li><strong>Testing:</strong> Test all changes in a staging environment first</li>
+            </ul>
+        </div>
+
+        <h3>Change Management Process</h3>
+        <div class="step-box">
+            <h4>Recommended Change Process:</h4>
+            <ol>
+                <li><strong>Plan:</strong> Document proposed changes and business justification</li>
+                <li><strong>Review:</strong> Get approval from business stakeholders</li>
+                <li><strong>Test:</strong> Verify changes work as expected</li>
+                <li><strong>Deploy:</strong> Implement changes during low-traffic periods</li>
+                <li><strong>Monitor:</strong> Watch for any issues or customer confusion</li>
+                <li><strong>Document:</strong> Record changes in configuration log</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Troubleshooting Configuration Issues</h2>
+
+        <div class="warning-box">
+            <strong>Issue:</strong> New service type not appearing for customers<br>
+            <strong>Solutions:</strong>
+            <ul>
+                <li>Check service type status is set to "Active"</li>
+                <li>Verify service has been saved properly</li>
+                <li>Ensure customers refresh their mobile app</li>
+                <li>Check if service has geographic or time restrictions</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <strong>Issue:</strong> Customers can't complete orders due to missing questions<br>
+            <strong>Solutions:</strong>
+            <ul>
+                <li>Verify required questions are properly configured</li>
+                <li>Check question types match expected input</li>
+                <li>Ensure questions are assigned to correct service types</li>
+                <li>Test the complete order flow as a customer would</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <strong>Issue:</strong> Common items not showing up in customer orders<br>
+            <strong>Solutions:</strong>
+            <ul>
+                <li>Confirm items are linked to the correct service type</li>
+                <li>Check item status is "Active"</li>
+                <li>Verify item names and descriptions are clear</li>
+                <li>Ensure images are loading properly</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Advanced Configuration Tips</h2>
+
+        <h3>Seasonal Configuration</h3>
+        <ul>
+            <li><strong>Peak Season Services:</strong> Add specialized services for high-demand periods</li>
+            <li><strong>Holiday Restrictions:</strong> Configure service availability during holidays</li>
+            <li><strong>Weather-Specific Items:</strong> Add seasonal packing materials or protective items</li>
+            <li><strong>Dynamic Pricing:</strong> Adjust base prices for peak/off-peak periods</li>
+        </ul>
+
+        <h3>Geographic Customization</h3>
+        <ul>
+            <li><strong>Regional Services:</strong> Offer different services in different cities</li>
+            <li><strong>Local Regulations:</strong> Configure questions to comply with local requirements</li>
+            <li><strong>Cultural Considerations:</strong> Adapt items and services for regional preferences</li>
+            <li><strong>Language Localization:</strong> Provide questions and items in local languages</li>
+        </ul>
+
+        <h3>Performance Optimization</h3>
+        <div class="step-box">
+            <h4>Optimization Strategies:</h4>
+            <ul>
+                <li><strong>Question Efficiency:</strong> Minimize required questions while maintaining accuracy</li>
+                <li><strong>Item Organization:</strong> Group related items for faster selection</li>
+                <li><strong>Smart Defaults:</strong> Use common answers as default values</li>
+                <li><strong>Progressive Disclosure:</strong> Show advanced options only when needed</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

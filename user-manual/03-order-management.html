@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management - Juno Fast Admin Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .header {
+            background: linear-gradient(135deg, #2563eb, #059669);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .chapter {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 2.5em; margin: 0; }
+        h2 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+        h3 { color: #059669; }
+        .step-box {
+            background: #f0fdf4;
+            border: 1px solid #059669;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #d97706;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .critical-box {
+            background: #fef2f2;
+            border: 1px solid #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #d1d5db;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f3f4f6;
+            font-weight: bold;
+        }
+        .feature-highlight {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📦 Order Management</h1>
+        <p>Complete Guide to Managing Relocation Orders</p>
+    </div>
+
+    <div class="chapter">
+        <h2>Overview</h2>
+        <p>Order Management is the core functionality of the Juno Fast Admin Portal. This section handles all aspects of customer orders from initial placement through completion. You can view, filter, search, update, and track all relocation orders through this interface.</p>
+        
+        <div class="info-box">
+            <strong>Access:</strong> Click "Orders" in the left sidebar to access the order management page.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Orders Table Overview</h2>
+        <p>The main orders table displays all orders in your system with the following columns:</p>
+
+        <table>
+            <tr>
+                <th>Column</th>
+                <th>Description</th>
+                <th>Example Values</th>
+            </tr>
+            <tr>
+                <td>Order ID</td>
+                <td>Complete unique identifier for the order</td>
+                <td>4620ea2c-75c3-40b2-875b-b9c251752d4b</td>
+            </tr>
+            <tr>
+                <td>Customer</td>
+                <td>Customer name and contact information</td>
+                <td>John Smith<br>+91 9876543210</td>
+            </tr>
+            <tr>
+                <td>Service Type</td>
+                <td>Type of relocation service</td>
+                <td>House Relocation, Office Move, PG Relocation</td>
+            </tr>
+            <tr>
+                <td>Route</td>
+                <td>Pickup and drop-off locations</td>
+                <td>Mumbai → Delhi</td>
+            </tr>
+            <tr>
+                <td>Status</td>
+                <td>Current order status with color coding</td>
+                <td>Pending, Confirmed, In Progress, Completed</td>
+            </tr>
+            <tr>
+                <td>Price</td>
+                <td>Order pricing information</td>
+                <td>₹15,000 (Estimated)<br>₹18,500 (Final)</td>
+            </tr>
+            <tr>
+                <td>Date</td>
+                <td>Order creation date</td>
+                <td>21 Jun 2025</td>
+            </tr>
+            <tr>
+                <td>Actions</td>
+                <td>View and edit buttons</td>
+                <td>👁 View, ✏️ Edit</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="chapter">
+        <h2>Search and Filter System</h2>
+        
+        <h3>Advanced Search Functionality</h3>
+        <p>The search feature allows you to find orders quickly across multiple fields:</p>
+        
+        <div class="feature-highlight">
+            <h4>Search Capabilities:</h4>
+            <ul>
+                <li><strong>Order ID:</strong> Search by complete or partial order ID</li>
+                <li><strong>Customer Name:</strong> Find orders by customer's full name</li>
+                <li><strong>Email Address:</strong> Search using customer email</li>
+                <li><strong>Phone Number:</strong> Find orders by customer phone number</li>
+                <li><strong>Service Type:</strong> Search by service type (House, Office, etc.)</li>
+                <li><strong>Addresses:</strong> Search in pickup or drop-off locations</li>
+            </ul>
+        </div>
+
+        <div class="step-box">
+            <h4>How to Use Search:</h4>
+            <ol>
+                <li>Locate the search bar at the top of the filters section</li>
+                <li>Type any part of the information you're looking for</li>
+                <li>Search is case-insensitive and works with partial matches</li>
+                <li>Results update automatically as you type</li>
+                <li>Clear the search field to see all orders again</li>
+            </ol>
+        </div>
+
+        <h3>Filter Options</h3>
+        <table>
+            <tr>
+                <th>Filter Type</th>
+                <th>Options</th>
+                <th>Use Case</th>
+            </tr>
+            <tr>
+                <td>Status Filter</td>
+                <td>All, Pending, Confirmed, In Progress, Completed, Cancelled, Price Updated, Price Accepted</td>
+                <td>Focus on orders requiring specific attention</td>
+            </tr>
+            <tr>
+                <td>Service Type</td>
+                <td>All Services, House Relocation, Office Relocation, Vehicle Transportation, Pet Relocation, Industrial Shipment, Events & Exhibitions, PG Relocation</td>
+                <td>Analyze performance by service category</td>
+            </tr>
+            <tr>
+                <td>Date Range</td>
+                <td>Custom date picker for start and end dates</td>
+                <td>Review orders from specific time periods</td>
+            </tr>
+        </table>
+
+        <div class="info-box">
+            <strong>Pro Tip:</strong> Combine multiple filters for precise results. For example, filter by "Pending" status and "House Relocation" service to see all pending house moving orders.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Order Status Management</h2>
+        
+        <h3>Status Workflow</h3>
+        <p>Orders follow a specific lifecycle with defined status transitions:</p>
+
+        <div class="step-box">
+            <h4>Normal Order Flow:</h4>
+            <ol>
+                <li><strong>Pending:</strong> Initial order placed by customer</li>
+                <li><strong>Confirmed:</strong> Admin reviews and approves order</li>
+                <li><strong>In Progress:</strong> Order execution begins</li>
+                <li><strong>Completed:</strong> Service successfully delivered</li>
+            </ol>
+        </div>
+
+        <div class="step-box">
+            <h4>Alternative Flows:</h4>
+            <ul>
+                <li><strong>Price Updated:</strong> Admin modifies price, awaiting customer approval</li>
+                <li><strong>Price Accepted:</strong> Customer approves updated price</li>
+                <li><strong>Cancelled:</strong> Order cancelled by customer or admin</li>
+            </ul>
+        </div>
+
+        <h3>How to Update Order Status</h3>
+        <div class="step-box">
+            <ol>
+                <li>Click the "View" button (👁) next to any order</li>
+                <li>In the order details modal, locate the status dropdown</li>
+                <li>Select the new status from the dropdown menu</li>
+                <li>Click "Update Order" to save changes</li>
+                <li>Customer receives automatic notification via mobile app</li>
+            </ol>
+        </div>
+
+        <div class="warning-box">
+            <strong>Important Status Rules:</strong>
+            <ul>
+                <li>Only move orders forward in the workflow sequence</li>
+                <li>Completed orders cannot be changed back to previous statuses</li>
+                <li>Cancelled orders should not be reactivated</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Price Management</h2>
+        
+        <h3>Price Types Explained</h3>
+        <table>
+            <tr>
+                <th>Price Type</th>
+                <th>Description</th>
+                <th>When to Use</th>
+            </tr>
+            <tr>
+                <td>Approximate Price</td>
+                <td>Initial estimate provided to customer</td>
+                <td>Based on basic order information</td>
+            </tr>
+            <tr>
+                <td>Estimated Price</td>
+                <td>More accurate estimate after detailed assessment</td>
+                <td>After reviewing complete order details</td>
+            </tr>
+            <tr>
+                <td>Final Price</td>
+                <td>Actual amount to be charged</td>
+                <td>Final pricing after any adjustments</td>
+            </tr>
+        </table>
+
+        <div class="critical-box">
+            <strong>Critical Rule:</strong> Prices can only be edited when order status is "Pending" or "Price Updated". All other statuses lock the price fields for data integrity.
+        </div>
+
+        <h3>How to Update Pricing</h3>
+        <div class="step-box">
+            <ol>
+                <li>Ensure order status is "Pending" or "Price Updated"</li>
+                <li>Open the order details modal</li>
+                <li>Locate the editable price fields</li>
+                <li>Enter new pricing information</li>
+                <li>Change status to "Price Updated" if customer approval is needed</li>
+                <li>Click "Update Order" to save changes</li>
+            </ol>
+        </div>
+
+        <div class="warning-box">
+            <strong>Best Practices for Pricing:</strong>
+            <ul>
+                <li>Always provide transparent pricing breakdowns</li>
+                <li>Update prices only after thorough assessment</li>
+                <li>Communicate price changes clearly to customers</li>
+                <li>Document reasons for price adjustments in notes</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Order Details Modal</h2>
+        
+        <p>The order details modal provides comprehensive information about each order and allows for updates. It contains several sections:</p>
+
+        <h3>Section 1: Basic Order Information</h3>
+        <ul>
+            <li>Complete Order ID</li>
+            <li>Customer profile information</li>
+            <li>Service type and status</li>
+            <li>Pickup and drop-off addresses with pin codes</li>
+            <li>Scheduled and completion dates</li>
+            <li>All pricing information</li>
+        </ul>
+
+        <h3>Section 2: Common Items</h3>
+        <ul>
+            <li>Pre-defined items customer selected for moving</li>
+            <li>Quantities and descriptions</li>
+            <li>Standard items like suitcases, furniture, appliances</li>
+        </ul>
+
+        <h3>Section 3: Custom Items</h3>
+        <ul>
+            <li>Special items customer added manually</li>
+            <li>Custom descriptions and quantities</li>
+            <li>Photos uploaded by customer (if any)</li>
+        </ul>
+
+        <h3>Section 4: Service Questions & Answers</h3>
+        <ul>
+            <li>Customer responses to service-specific questions</li>
+            <li>Important details like floor numbers, elevator availability</li>
+            <li>Special requirements and preferences</li>
+        </ul>
+
+        <h3>Section 5: Order Details</h3>
+        <ul>
+            <li>Additional technical details and specifications</li>
+            <li>System-generated metadata</li>
+            <li>Tracking information and timestamps</li>
+        </ul>
+
+        <div class="info-box">
+            <strong>Navigation Tip:</strong> Use the scroll bar within the modal to view all sections. Each section is clearly labeled and contains relevant information for order processing.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Common Order Management Tasks</h2>
+
+        <h3>Daily Workflow Tasks</h3>
+        
+        <div class="step-box">
+            <h4>Morning Routine:</h4>
+            <ol>
+                <li>Filter orders by "Pending" status</li>
+                <li>Review new orders from overnight</li>
+                <li>Update pricing based on detailed requirements</li>
+                <li>Confirm orders ready for execution</li>
+                <li>Change status to "Confirmed" for approved orders</li>
+            </ol>
+        </div>
+
+        <div class="step-box">
+            <h4>Ongoing Monitoring:</h4>
+            <ol>
+                <li>Check "In Progress" orders for completion</li>
+                <li>Update orders to "Completed" when finished</li>
+                <li>Handle customer inquiries about order status</li>
+                <li>Monitor "Price Updated" orders for customer responses</li>
+            </ol>
+        </div>
+
+        <div class="step-box">
+            <h4>End of Day Review:</h4>
+            <ol>
+                <li>Ensure all pending orders have been addressed</li>
+                <li>Verify all completed orders are properly closed</li>
+                <li>Review next day's scheduled orders</li>
+                <li>Check for any urgent customer communications</li>
+            </ol>
+        </div>
+
+        <h3>Customer Communication Guidelines</h3>
+        <div class="info-box">
+            <strong>Status Change Notifications:</strong>
+            <ul>
+                <li>Customers automatically receive mobile app notifications for status changes</li>
+                <li>Ensure status updates are accurate before saving</li>
+                <li>Price updates trigger special notifications requiring customer approval</li>
+                <li>Use the notes field to document important communication</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Troubleshooting Common Issues</h2>
+
+        <div class="critical-box">
+            <strong>Issue:</strong> Cannot edit order price<br>
+            <strong>Cause:</strong> Order status is not "Pending" or "Price Updated"<br>
+            <strong>Solution:</strong> Price editing is restricted for data integrity. Only pending orders allow price modifications.
+        </div>
+
+        <div class="warning-box">
+            <strong>Issue:</strong> Customer not receiving status updates<br>
+            <strong>Cause:</strong> Mobile app notification issues<br>
+            <strong>Solution:</strong> Verify status changes are being saved. Customer should check mobile app notifications or contact customer service.
+        </div>
+
+        <div class="info-box">
+            <strong>Issue:</strong> Search not finding expected orders<br>
+            <strong>Cause:</strong> Incorrect search terms or applied filters<br>
+            <strong>Solution:</strong> Clear all filters and try searching with partial information. Check spelling and try different search terms.
+        </div>
+
+        <div class="info-box">
+            <strong>Issue:</strong> Order details not loading<br>
+            <strong>Cause:</strong> Network connectivity or server issues<br>
+            <strong>Solution:</strong> Refresh the page and try again. Check internet connection.
+        </div>
+    </div>
+
+    <div class="chapter">
+        <h2>Advanced Tips and Best Practices</h2>
+
+        <h3>Efficiency Tips</h3>
+        <ul>
+            <li><strong>Keyboard Shortcuts:</strong> Use Tab to navigate between form fields quickly</li>
+            <li><strong>Bulk Processing:</strong> Use filters to group similar orders for batch processing</li>
+            <li><strong>Status Tracking:</strong> Regularly update order statuses to maintain accurate tracking</li>
+            <li><strong>Documentation:</strong> Use notes fields to document important decisions or customer communications</li>
+        </ul>
+
+        <h3>Quality Assurance</h3>
+        <ul>
+            <li>Double-check pricing before updating order status</li>
+            <li>Verify customer contact information is accurate</li>
+            <li>Ensure pickup and drop-off addresses are complete</li>
+            <li>Review special requirements in questions section</li>
+            <li>Confirm all required items are properly documented</li>
+        </ul>
+
+        <div class="warning-box">
+            <strong>Data Integrity Rules:</strong>
+            <ul>
+                <li>Never manually edit order IDs or customer IDs</li>
+                <li>Always use the provided status options</li>
+                <li>Maintain accurate pricing throughout the order lifecycle</li>
+                <li>Document all significant changes in the notes field</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
