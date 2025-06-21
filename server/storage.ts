@@ -272,29 +272,63 @@ export class PostgresStorage implements IStorage {
     );
 
     try {
-      // Use the exact same query structure as Flutter app
-      const { data: orderData, error } = await supabase
+      // First, let's test if the order exists at all
+      const { data: basicOrder, error: basicError } = await supabase
         .from('orders')
-        .select(`
-          *,
-          order_details(*),
-          common_items_in_orders(*, common_item:common_items(*)),
-          custom_items(*, item_photos(*)),
-          order_question_answers(*)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
-      console.log('Supabase query error:', error);
-      console.log('Raw orderData keys:', orderData ? Object.keys(orderData) : 'null');
+      console.log('Basic order query error:', basicError);
+      console.log('Basic order found:', !!basicOrder);
 
-      if (error) {
-        throw new Error(`Failed to fetch order: ${error.message}`);
+      if (basicError || !basicOrder) {
+        throw new Error(`Order not found: ${basicError?.message}`);
       }
 
-      if (!orderData) {
-        throw new Error('Order not found');
-      }
+      // Now let's try each related table separately to see what exists
+      const { data: orderDetailsData } = await supabase
+        .from('order_details')
+        .select('*')
+        .eq('order_id', id);
+
+      const { data: commonItemsData } = await supabase
+        .from('common_items_in_orders')
+        .select('*, common_items(*)')
+        .eq('order_id', id);
+
+      const { data: customItemsData } = await supabase
+        .from('custom_items')
+        .select('*, item_photos(*)')
+        .eq('order_id', id);
+
+      const { data: questionAnswersData } = await supabase
+        .from('order_question_answers')
+        .select('*')
+        .eq('order_id', id);
+
+      console.log('Separate queries results:');
+      console.log('- Order details:', orderDetailsData?.length || 0, orderDetailsData);
+      console.log('- Common items:', commonItemsData?.length || 0, commonItemsData);
+      console.log('- Custom items:', customItemsData?.length || 0, customItemsData);
+      console.log('- Question answers:', questionAnswersData?.length || 0, questionAnswersData);
+
+      // Let's also check if ANY orders have related data
+      const { data: anyOrderDetails } = await supabase
+        .from('order_details')
+        .select('*')
+        .limit(5);
+      
+      const { data: anyCommonItems } = await supabase
+        .from('common_items_in_orders')
+        .select('*')
+        .limit(5);
+
+      console.log('Database check - any order_details exist:', anyOrderDetails?.length || 0);
+      console.log('Database check - any common_items_in_orders exist:', anyCommonItems?.length || 0);
+
+      // Use basic order as orderData
+      const orderData = basicOrder;
 
       // Process the data exactly like Flutter OrderModel.fromJson()
       const order = orderData as Order;
@@ -310,42 +344,43 @@ export class PostgresStorage implements IStorage {
         profile = profileData;
       }
 
-      // Process common items like Flutter app
+      // Process common items using separate query results
       const commonItems: CommonItemInOrder[] = [];
-      if (orderData.common_items_in_orders) {
-        for (const item of orderData.common_items_in_orders) {
+      if (commonItemsData && Array.isArray(commonItemsData)) {
+        for (const item of commonItemsData) {
+          const commonItem = item.common_items; // This is the nested common_items data
           commonItems.push({
             id: item.id,
             orderId: item.order_id,
             itemId: item.item_id,
-            name: item.name,
-            description: item.description,
-            imageUrl: item.image_url,
-            quantity: item.quantity,
+            name: item.name || (commonItem ? commonItem.name : ''),
+            description: item.description || (commonItem ? commonItem.description : ''),
+            imageUrl: item.image_url || (commonItem ? commonItem.image_url : ''),
+            quantity: item.quantity || 0,
             createdAt: item.created_at,
           });
         }
       }
 
-      // Process custom items like Flutter app
+      // Process custom items using separate query results
       const customItems: CustomItem[] = [];
-      if (orderData.custom_items) {
-        for (const item of orderData.custom_items) {
+      if (customItemsData && Array.isArray(customItemsData)) {
+        for (const item of customItemsData) {
           customItems.push({
             id: item.id,
             orderId: item.order_id,
             name: item.name,
-            description: item.description,
-            quantity: item.quantity,
+            description: item.description || '',
+            quantity: item.quantity || 1,
             createdAt: item.created_at,
           });
         }
       }
 
-      // Process question answers like Flutter app
+      // Process question answers using separate query results
       const questionAnswers: OrderQuestionAnswer[] = [];
-      if (orderData.order_question_answers) {
-        for (const answer of orderData.order_question_answers) {
+      if (questionAnswersData && Array.isArray(questionAnswersData)) {
+        for (const answer of questionAnswersData) {
           questionAnswers.push({
             id: answer.id,
             orderId: answer.order_id,
@@ -360,10 +395,10 @@ export class PostgresStorage implements IStorage {
         }
       }
 
-      // Process order details like Flutter app
+      // Process order details using separate query results
       const orderDetails: any[] = [];
-      if (orderData.order_details) {
-        for (const detail of orderData.order_details) {
+      if (orderDetailsData && Array.isArray(orderDetailsData)) {
+        for (const detail of orderDetailsData) {
           orderDetails.push({
             id: detail.id,
             orderId: detail.order_id,
@@ -375,7 +410,6 @@ export class PostgresStorage implements IStorage {
       }
 
       console.log(`Order ${id}: Found ${orderDetails.length} details, ${commonItems.length} common items, ${customItems.length} custom items, ${questionAnswers.length} answers`);
-      console.log('Raw Supabase orderData:', JSON.stringify(orderData, null, 2));
 
       return {
         order,
