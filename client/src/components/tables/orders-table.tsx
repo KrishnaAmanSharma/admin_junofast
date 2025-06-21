@@ -88,7 +88,12 @@ export function OrdersTable({ orders, isLoading, onViewOrder, onEditOrder }: Ord
           {orders.map((order) => (
             <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-4 px-6 font-medium text-admin-slate">
-                #{order.id.slice(0, 8)}
+                <span 
+                  title={order.id}
+                  className="cursor-help font-mono text-xs"
+                >
+                  #{order.id}
+                </span>
               </td>
               <td className="py-4 px-6">
                 <div className="flex items-center">
