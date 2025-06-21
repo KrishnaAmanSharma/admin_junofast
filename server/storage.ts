@@ -324,8 +324,15 @@ export class PostgresStorage implements IStorage {
         .select('*')
         .limit(5);
 
+      const { data: allOrders } = await supabase
+        .from('orders')
+        .select('id, service_type, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
       console.log('Database check - any order_details exist:', anyOrderDetails?.length || 0);
       console.log('Database check - any common_items_in_orders exist:', anyCommonItems?.length || 0);
+      console.log('Recent orders in database:', allOrders?.map(o => ({ id: o.id.substring(0, 8), service: o.service_type })) || []);
 
       // Use basic order as orderData
       const orderData = basicOrder;
