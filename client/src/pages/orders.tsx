@@ -135,6 +135,7 @@ export default function Orders() {
               orders={orders || []} 
               isLoading={isLoading}
               onViewOrder={setSelectedOrderId}
+              onEditOrder={setSelectedOrderId}
             />
           </CardContent>
         </Card>

@@ -8,9 +8,10 @@ interface OrdersTableProps {
   orders: Order[];
   isLoading: boolean;
   onViewOrder: (orderId: string) => void;
+  onEditOrder?: (orderId: string) => void;
 }
 
-export function OrdersTable({ orders, isLoading, onViewOrder }: OrdersTableProps) {
+export function OrdersTable({ orders, isLoading, onViewOrder, onEditOrder }: OrdersTableProps) {
   const getStatusBadge = (status: string) => {
     const statusColors = {
       "Pending": "bg-yellow-100 text-yellow-800",
@@ -127,6 +128,7 @@ export function OrdersTable({ orders, isLoading, onViewOrder }: OrdersTableProps
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => onEditOrder ? onEditOrder(order.id) : onViewOrder(order.id)}
                     className="text-warning-custom hover:text-yellow-700"
                   >
                     <Edit className="w-4 h-4" />
