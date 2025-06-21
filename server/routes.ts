@@ -66,13 +66,6 @@ export async function registerRoutes(app: Express) {
         
         if (!profileError) {
           profiles = profileData || [];
-          console.log('Fetched profiles:', profiles.map(p => ({ 
-            id: p.id, 
-            email: p.email, 
-            phone_number: p.phone_number, 
-            full_name: p.full_name,
-            rawKeys: Object.keys(p)
-          })));
         } else {
           console.error('Profile fetch error:', profileError);
         }
