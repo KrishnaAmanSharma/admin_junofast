@@ -107,7 +107,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Get single order with details using parallel queries (optimized approach)
+  // Get single order with details
   app.get("/api/orders/:id", async (req, res) => {
     try {
       const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
@@ -115,10 +115,10 @@ export async function registerRoutes(app: Express) {
       
       const supabase = createClient(supabaseUrl, supabaseKey);
       
-      // Fetch all data in parallel using the working Supabase client
+      // Fetch all data in parallel using Supabase client
       const [
         { data: orderData, error: orderError },
-        { data: initialOrderDetailsData, error: orderDetailsError },
+        { data: orderDetailsData, error: orderDetailsError },
         { data: commonItemsData, error: commonItemsError },
         { data: customItemsData, error: customItemsError },
         { data: questionAnswersData, error: questionAnswersError }
@@ -130,21 +130,12 @@ export async function registerRoutes(app: Express) {
         supabase.from('order_question_answers').select('*').eq('order_id', req.params.id)
       ]);
 
-      // Use the fetched order details data
-      const orderDetailsData = initialOrderDetailsData || [];
-      
-      console.log(`Found ${orderDetailsData.length} order details for order ${req.params.id}`);
-
       if (orderError) throw orderError;
       if (!orderData) {
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      // Log any specific errors
-      if (orderDetailsError) console.error('Order details error:', orderDetailsError);
-      if (commonItemsError) console.error('Common items error:', commonItemsError);
-      if (customItemsError) console.error('Custom items error:', customItemsError);
-      if (questionAnswersError) console.error('Question answers error:', questionAnswersError);
+      console.log(`Order ${req.params.id} - Retrieved ${orderDetailsData?.length || 0} order details`);
 
       // Fetch custom item photos if there are custom items
       let itemPhotos = [];
@@ -206,7 +197,7 @@ export async function registerRoutes(app: Express) {
         updatedAt: orderData.updated_at,
       };
 
-      // Process nested data from parallel queries  
+      // Process order details from the order_details table
       const orderDetails = (orderDetailsData || []).map((detail: any) => ({
         id: detail.id,
         orderId: detail.order_id,
@@ -214,6 +205,8 @@ export async function registerRoutes(app: Express) {
         value: detail.value,
         createdAt: detail.created_at,
       }));
+
+      // Process other nested data
       const commonItems = (commonItemsData || []).map((item: any) => ({
         id: item.id,
         orderId: item.order_id,
@@ -251,7 +244,7 @@ export async function registerRoutes(app: Express) {
         createdAt: qa.created_at,
       }));
 
-      console.log(`Order ${req.params.id} - Parallel queries results:`);
+      console.log(`Order ${req.params.id} - Final results:`);
       console.log('- Order details:', orderDetails.length);
       console.log('- Common items:', commonItems.length);
       console.log('- Custom items:', customItems.length);
