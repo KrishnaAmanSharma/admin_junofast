@@ -134,14 +134,7 @@ export function OrdersTable({ orders, isLoading, onViewOrder, onEditOrder }: Ord
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEditOrder ? onEditOrder(order.id) : onViewOrder(order.id)}
-                    className="text-warning-custom hover:text-yellow-700"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
+                  
                 </div>
               </td>
             </tr>
