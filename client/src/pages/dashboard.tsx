@@ -5,10 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OrderDetailsModal } from "@/components/modals/order-details-modal";
 import {
-  Package,
-  IndianRupee,
-  Clock,
-  UserPlus,
   Eye,
 } from "lucide-react";
 import { useState } from "react";
@@ -19,21 +15,9 @@ type OrderWithProfile = Order & { profile: Profile | null };
 export default function Dashboard() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-  const { data: metrics, isLoading: metricsLoading } = useQuery({
-    queryKey: ["/api/dashboard/metrics"],
-  });
-
   const { data: recentOrders, isLoading: ordersLoading } = useQuery<OrderWithProfile[]>({
     queryKey: ["/api/dashboard/recent-orders"],
   });
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
@@ -56,20 +40,16 @@ export default function Dashboard() {
     );
   };
 
-  if (metricsLoading || ordersLoading) {
+  if (ordersLoading) {
     return (
       <div>
         <Header title="Dashboard" />
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
-                  <div className="h-16 bg-gray-200 rounded"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card className="animate-pulse">
+            <CardContent className="p-6">
+              <div className="h-32 bg-gray-200 rounded"></div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -80,84 +60,6 @@ export default function Dashboard() {
       <Header title="Dashboard" />
       
       <div className="p-6 space-y-6">
-        {/* Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Total Orders</p>
-                  <p className="text-2xl font-bold text-admin-slate">
-                    {metrics?.totalOrders?.toLocaleString() || 0}
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <Package className="text-primary-custom" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <span className="text-sm text-secondary-custom">+12% from last month</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                  <p className="text-2xl font-bold text-admin-slate">
-                    {formatCurrency(metrics?.totalRevenue || 0)}
-                  </p>
-                </div>
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <IndianRupee className="text-secondary-custom" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <span className="text-sm text-secondary-custom">+8% from last month</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Active Orders</p>
-                  <p className="text-2xl font-bold text-admin-slate">
-                    {metrics?.activeOrders || 0}
-                  </p>
-                </div>
-                <div className="p-3 bg-yellow-50 rounded-lg">
-                  <Clock className="text-warning-custom" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <span className="text-sm text-destructive-custom">3 urgent</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">New Users</p>
-                  <p className="text-2xl font-bold text-admin-slate">
-                    {metrics?.newUsers || 0}
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <UserPlus className="text-purple-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <span className="text-sm text-secondary-custom">+5 today</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Recent Orders Requiring Attention */}
         <Card className="shadow-sm">
