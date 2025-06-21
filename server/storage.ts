@@ -264,38 +264,128 @@ export class PostgresStorage implements IStorage {
     questionAnswers: OrderQuestionAnswer[];
     orderDetails: any[];
   }> {
-    const order = await this.getOrder(id);
-    if (!order) throw new Error("Order not found");
+    // Use Supabase client directly with the same nested query as Flutter app
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.VITE_SUPABASE_URL!,
+      process.env.VITE_SUPABASE_ANON_KEY!
+    );
 
-    let profile = null;
-    if (order.userId) {
-      const profileResult = await db.select().from(schema.profiles)
-        .where(eq(schema.profiles.id, order.userId));
-      profile = profileResult[0] || null;
+    try {
+      // Use the exact same query structure as Flutter app
+      const { data: orderData, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_details(*),
+          common_items_in_orders(*, common_item:common_items(*)),
+          custom_items(*, item_photos(*)),
+          order_question_answers(*)
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to fetch order: ${error.message}`);
+      }
+
+      if (!orderData) {
+        throw new Error('Order not found');
+      }
+
+      // Process the data exactly like Flutter OrderModel.fromJson()
+      const order = orderData as Order;
+
+      // Get profile separately
+      let profile = null;
+      if (order.userId) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', order.userId)
+          .single();
+        profile = profileData;
+      }
+
+      // Process common items like Flutter app
+      const commonItems: CommonItemInOrder[] = [];
+      if (orderData.common_items_in_orders) {
+        for (const item of orderData.common_items_in_orders) {
+          commonItems.push({
+            id: item.id,
+            orderId: item.order_id,
+            itemId: item.item_id,
+            name: item.name,
+            description: item.description,
+            imageUrl: item.image_url,
+            quantity: item.quantity,
+            createdAt: item.created_at,
+          });
+        }
+      }
+
+      // Process custom items like Flutter app
+      const customItems: CustomItem[] = [];
+      if (orderData.custom_items) {
+        for (const item of orderData.custom_items) {
+          customItems.push({
+            id: item.id,
+            orderId: item.order_id,
+            name: item.name,
+            description: item.description,
+            quantity: item.quantity,
+            createdAt: item.created_at,
+          });
+        }
+      }
+
+      // Process question answers like Flutter app
+      const questionAnswers: OrderQuestionAnswer[] = [];
+      if (orderData.order_question_answers) {
+        for (const answer of orderData.order_question_answers) {
+          questionAnswers.push({
+            id: answer.id,
+            orderId: answer.order_id,
+            questionId: answer.question_id,
+            question: answer.question,
+            answer: answer.answer,
+            questionType: answer.question_type,
+            parentQuestionId: answer.parent_question_id,
+            additionalData: answer.additional_data,
+            createdAt: answer.created_at,
+          });
+        }
+      }
+
+      // Process order details like Flutter app
+      const orderDetails: any[] = [];
+      if (orderData.order_details) {
+        for (const detail of orderData.order_details) {
+          orderDetails.push({
+            id: detail.id,
+            orderId: detail.order_id,
+            name: detail.name,
+            value: detail.value,
+            createdAt: detail.created_at,
+          });
+        }
+      }
+
+      console.log(`Order ${id}: Found ${orderDetails.length} details, ${commonItems.length} common items, ${customItems.length} custom items, ${questionAnswers.length} answers`);
+      console.log('Raw Supabase orderData:', JSON.stringify(orderData, null, 2));
+
+      return {
+        order,
+        profile,
+        commonItems,
+        customItems,
+        questionAnswers,
+        orderDetails,
+      };
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      throw error;
     }
-
-    const commonItems = await db.select().from(schema.commonItemsInOrders)
-      .where(eq(schema.commonItemsInOrders.orderId, id));
-
-    const customItems = await db.select().from(schema.customItems)
-      .where(eq(schema.customItems.orderId, id));
-
-    const questionAnswers = await db.select().from(schema.orderQuestionAnswers)
-      .where(eq(schema.orderQuestionAnswers.orderId, id));
-
-    const orderDetails = await db.select().from(schema.orderDetails)
-      .where(eq(schema.orderDetails.orderId, id));
-
-    console.log(`Order ${id}: Found ${orderDetails.length} details, ${commonItems.length} common items, ${customItems.length} custom items, ${questionAnswers.length} answers`);
-
-    return {
-      order,
-      profile,
-      commonItems,
-      customItems,
-      questionAnswers,
-      orderDetails,
-    };
   }
 
   async getProfiles(search?: string): Promise<Profile[]> {
