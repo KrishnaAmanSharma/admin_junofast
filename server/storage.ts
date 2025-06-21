@@ -75,6 +75,7 @@ export interface IStorage {
     commonItems: CommonItemInOrder[];
     customItems: CustomItem[];
     questionAnswers: OrderQuestionAnswer[];
+    orderDetails: any[];
   }>;
 
   // Users
@@ -261,6 +262,7 @@ export class PostgresStorage implements IStorage {
     commonItems: CommonItemInOrder[];
     customItems: CustomItem[];
     questionAnswers: OrderQuestionAnswer[];
+    orderDetails: any[];
   }> {
     const order = await this.getOrder(id);
     if (!order) throw new Error("Order not found");
@@ -281,12 +283,16 @@ export class PostgresStorage implements IStorage {
     const questionAnswers = await db.select().from(schema.orderQuestionAnswers)
       .where(eq(schema.orderQuestionAnswers.orderId, id));
 
+    const orderDetails = await db.select().from(schema.orderDetails)
+      .where(eq(schema.orderDetails.orderId, id));
+
     return {
       order,
       profile,
       commonItems,
       customItems,
       questionAnswers,
+      orderDetails,
     };
   }
 

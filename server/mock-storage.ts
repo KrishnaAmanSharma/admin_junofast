@@ -447,6 +447,7 @@ export class MockStorage implements IStorage {
     commonItems: CommonItemInOrder[];
     customItems: CustomItem[];
     questionAnswers: OrderQuestionAnswer[];
+    orderDetails: any[];
   }> {
     const order = await this.getOrder(id);
     if (!order) throw new Error("Order not found");
@@ -462,6 +463,7 @@ export class MockStorage implements IStorage {
       commonItems: orderCommonItems,
       customItems: orderCustomItems,
       questionAnswers: orderQuestionAnswers,
+      orderDetails: [], // Mock storage returns empty array for order details
     };
   }
 

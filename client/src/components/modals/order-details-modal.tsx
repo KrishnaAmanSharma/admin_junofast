@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -294,9 +294,9 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                     <div key={qa.id} className="p-3 bg-gray-50 rounded-lg">
                       <p className="font-medium text-admin-slate mb-1">{qa.question}</p>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Badge variant="outline">
+                        <span className="px-2 py-1 text-xs bg-gray-100 rounded border">
                           {qa.questionType}
-                        </Badge>
+                        </span>
                         <span>{qa.answer}</span>
                       </div>
                     </div>
