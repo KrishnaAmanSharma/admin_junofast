@@ -1,195 +1,15 @@
-import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { insertServiceTypeSchema, insertCommonItemSchema, insertServiceQuestionSchema, updateOrderSchema } from "@shared/schema";
-import * as schema from "@shared/schema";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { Express } from "express";
+import { createServer } from "http";
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
+import { updateOrderSchema } from "@shared/schema";
+import { storage } from "./storage";
+import { createClient } from '@supabase/supabase-js';
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import * as schema from "@shared/schema";
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Service Types Routes
-  app.get("/api/service-types", async (req, res) => {
-    try {
-      const serviceTypes = await storage.getServiceTypes();
-      res.json(serviceTypes);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch service types" });
-    }
-  });
-
-  app.get("/api/service-types/:id", async (req, res) => {
-    try {
-      const serviceType = await storage.getServiceType(req.params.id);
-      if (!serviceType) {
-        return res.status(404).json({ error: "Service type not found" });
-      }
-      res.json(serviceType);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch service type" });
-    }
-  });
-
-  app.post("/api/service-types", async (req, res) => {
-    try {
-      const validatedData = insertServiceTypeSchema.parse(req.body);
-      const serviceType = await storage.createServiceType(validatedData);
-      res.json(serviceType);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create service type" });
-    }
-  });
-
-  app.put("/api/service-types/:id", async (req, res) => {
-    try {
-      const validatedData = insertServiceTypeSchema.partial().parse(req.body);
-      const serviceType = await storage.updateServiceType(req.params.id, validatedData);
-      res.json(serviceType);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update service type" });
-    }
-  });
-
-  app.delete("/api/service-types/:id", async (req, res) => {
-    try {
-      await storage.deleteServiceType(req.params.id);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete service type" });
-    }
-  });
-
-  // Common Items Routes
-  app.get("/api/common-items", async (req, res) => {
-    try {
-      const serviceTypeId = req.query.serviceTypeId as string;
-      const items = await storage.getCommonItems(serviceTypeId);
-      res.json(items);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch common items" });
-    }
-  });
-
-  app.post("/api/common-items", async (req, res) => {
-    try {
-      const validatedData = insertCommonItemSchema.parse(req.body);
-      const item = await storage.createCommonItem(validatedData);
-      res.json(item);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create common item" });
-    }
-  });
-
-  app.put("/api/common-items/:id", async (req, res) => {
-    try {
-      const validatedData = insertCommonItemSchema.partial().parse(req.body);
-      const item = await storage.updateCommonItem(req.params.id, validatedData);
-      res.json(item);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update common item" });
-    }
-  });
-
-  app.delete("/api/common-items/:id", async (req, res) => {
-    try {
-      await storage.deleteCommonItem(req.params.id);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete common item" });
-    }
-  });
-
-  // Service Questions Routes
-  app.get("/api/service-questions", async (req, res) => {
-    try {
-      // Use supabase client directly to avoid connection issues
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.VITE_SUPABASE_URL!,
-        process.env.VITE_SUPABASE_ANON_KEY!
-      );
-      
-      const serviceTypeId = req.query.serviceTypeId as string;
-      let query = supabase.from('service_questions').select('*').order('display_order');
-      
-      if (serviceTypeId && serviceTypeId !== 'all') {
-        query = query.eq('service_type_id', serviceTypeId);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      // Transform string options to arrays for Flutter compatibility
-      const transformedData = (data || []).map(question => ({
-        id: question.id,
-        serviceTypeId: question.service_type_id,
-        question: question.question,
-        questionType: question.question_type,
-        isRequired: question.is_required,
-        displayOrder: question.display_order,
-        options: question.options && typeof question.options === 'string' 
-          ? question.options.split(',').map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0)
-          : question.options,
-        parentQuestionId: question.parent_question_id,
-        isActive: question.is_active,
-        createdAt: question.created_at,
-        updatedAt: question.updated_at
-      }));
-      
-      res.json(transformedData);
-    } catch (error) {
-      console.error("Service questions error:", error);
-      res.status(500).json({ error: "Failed to fetch service questions", details: error instanceof Error ? error.message : error });
-    }
-  });
-
-  app.post("/api/service-questions", async (req, res) => {
-    try {
-      const validatedData = insertServiceQuestionSchema.parse(req.body);
-      const question = await storage.createServiceQuestion(validatedData);
-      res.json(question);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create service question" });
-    }
-  });
-
-  app.put("/api/service-questions/:id", async (req, res) => {
-    try {
-      const validatedData = insertServiceQuestionSchema.partial().parse(req.body);
-      const question = await storage.updateServiceQuestion(req.params.id, validatedData);
-      res.json(question);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update service question" });
-    }
-  });
-
-  app.delete("/api/service-questions/:id", async (req, res) => {
-    try {
-      await storage.deleteServiceQuestion(req.params.id);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete service question" });
-    }
-  });
+export async function registerRoutes(app: Express) {
+  const server = createServer(app);
 
   // Orders Routes
   app.get("/api/orders", async (req, res) => {
@@ -255,15 +75,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pickupLongitude: order.pickup_longitude,
           dropAddress: order.drop_address,
           dropPincode: order.drop_pincode,
+          dropLatitude: order.drop_latitude,
+          dropLongitude: order.drop_longitude,
+          estimatedPrice: order.estimated_price,
+          finalPrice: order.final_price,
+          scheduledDate: order.scheduled_date,
+          completedDate: order.completed_date,
           approxPrice: order.approx_price,
           createdAt: order.created_at,
           updatedAt: order.updated_at,
           userId: order.user_id,
           profile: profile ? {
-            ...profile,
-            fullName: profile.full_name,
-            phoneNumber: profile.phone_number,
-            avatarUrl: profile.avatar_url
+            id: profile.id,
+            email: profile.email,
+            fullName: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null,
+            phoneNumber: profile.phone,
+            avatarUrl: profile.avatar_url || null,
+            createdAt: profile.created_at,
+            updatedAt: profile.updated_at,
           } : null
         };
       });
@@ -278,11 +107,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single order with details using your optimized SQL query
   app.get("/api/orders/:id", async (req, res) => {
     try {
-      // Use your exact optimized SQL query that works in Supabase SQL editor
-      const postgres = require('postgres');
-      const sql = postgres(process.env.DATABASE_URL!);
+      const sql = postgres(process.env.DATABASE_URL!, {
+        ssl: { rejectUnauthorized: false }
+      });
       
       const optimizedResults = await sql`
         SELECT
@@ -348,116 +178,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
       
       const supabase = createClient(supabaseUrl, supabaseKey);
-
-      // Fetch user profile
+      
+      // Get user profile from the order data
       let profile = null;
-      if (order.user_id) {
+      if (orderData.user_id) {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', order.user_id)
+          .eq('id', orderData.user_id)
           .single();
         
         if (!profileError && profileData) {
           profile = {
-            ...profileData,
-            fullName: profileData.full_name,
-            phoneNumber: profileData.phone_number,
-            avatarUrl: profileData.avatar_url
+            id: profileData.id,
+            email: profileData.email,
+            fullName: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() || null,
+            phoneNumber: profileData.phone,
+            avatarUrl: profileData.avatar_url || null,
+            createdAt: profileData.created_at,
+            updatedAt: profileData.updated_at,
           };
         }
       }
 
-      // Fetch common items in orders
-      const { data: commonItemsData } = await supabase
-        .from('common_items_in_orders')
-        .select('*')
-        .eq('order_id', req.params.id);
-
-      // Fetch custom items
-      const { data: customItemsData } = await supabase
-        .from('custom_items')
-        .select('*')
-        .eq('order_id', req.params.id);
-
-      // Fetch item photos for custom items
-      let itemPhotos = [];
-      if (customItemsData && customItemsData.length > 0) {
-        const customItemIds = customItemsData.map(item => item.id);
-        const { data: photosData } = await supabase
-          .from('item_photos')
-          .select('*')
-          .in('custom_item_id', customItemIds);
-        
-        if (photosData) {
-          itemPhotos = photosData;
-        }
-      }
-
-      // Fetch order question answers
-      const { data: questionAnswersData } = await supabase
-        .from('order_question_answers')
-        .select('*')
-        .eq('order_id', req.params.id);
-
-      // Fetch order details
-      const { data: orderDetailsData } = await supabase
-        .from('order_details')
-        .select('*')
-        .eq('order_id', req.params.id);
-
       // Map order with proper field names
       const mappedOrder = {
-        ...order,
-        serviceType: order.service_type,
-        pickupAddress: order.pickup_address,
-        pickupPincode: order.pickup_pincode,
-        pickupLatitude: order.pickup_latitude,
-        pickupLongitude: order.pickup_longitude,
-        dropAddress: order.drop_address,
-        dropPincode: order.drop_pincode,
-        approxPrice: order.approx_price,
-        createdAt: order.created_at,
-        updatedAt: order.updated_at,
-        userId: order.user_id
+        id: orderData.id,
+        userId: orderData.user_id,
+        serviceType: orderData.service_type,
+        status: orderData.status,
+        pickupAddress: orderData.pickup_address,
+        pickupPincode: orderData.pickup_pincode,
+        pickupLatitude: orderData.pickup_latitude,
+        pickupLongitude: orderData.pickup_longitude,
+        dropAddress: orderData.drop_address,
+        dropPincode: orderData.drop_pincode,
+        dropLatitude: orderData.drop_latitude,
+        dropLongitude: orderData.drop_longitude,
+        estimatedPrice: orderData.estimated_price,
+        finalPrice: orderData.final_price,
+        scheduledDate: orderData.scheduled_date,
+        completedDate: orderData.completed_date,
+        notes: orderData.notes,
+        approxPrice: orderData.approx_price,
+        createdAt: orderData.created_at,
+        updatedAt: orderData.updated_at,
       };
 
-      // Map custom items with their photos
-      const mappedCustomItems = (customItemsData || []).map(item => ({
-        ...item,
+      // Process nested data exactly as returned from your optimized SQL query
+      const orderDetails = orderData.order_details || [];
+      const commonItems = (orderData.common_items || []).map((item: any) => ({
+        id: item.id,
+        orderId: item.order_id,
+        commonItemId: item.item_id,
+        quantity: item.quantity,
+        name: item.name,
+        description: item.description,
+        imageUrl: item.image_url,
         createdAt: item.created_at,
-        photos: itemPhotos.filter(photo => photo.custom_item_id === item.id).map(photo => ({
-          ...photo,
-          photoUrl: photo.photo_url,
-          createdAt: photo.created_at
-        }))
       }));
-
-      // Map question answers
-      const mappedQuestionAnswers = (questionAnswersData || []).map(qa => ({
-        ...qa,
+      
+      const customItems = (orderData.custom_items || []).map((item: any) => ({
+        id: item.id,
+        orderId: item.order_id,
+        name: item.name,
+        description: item.description || '',
+        quantity: item.quantity || 1,
+        createdAt: item.created_at,
+        photos: item.photos || [],
+      }));
+      
+      const questionAnswers = (orderData.question_answers || []).map((qa: any) => ({
+        id: qa.id,
+        orderId: qa.order_id,
+        questionId: qa.question_id,
+        question: qa.question,
+        answer: qa.answer,
         questionType: qa.question_type,
         parentQuestionId: qa.parent_question_id,
         additionalData: qa.additional_data,
-        createdAt: qa.created_at
+        createdAt: qa.created_at,
       }));
 
-      // Map order details
-      const mappedOrderDetails = (orderDetailsData || []).map(detail => ({
-        ...detail,
-        createdAt: detail.created_at
-      }));
+      console.log(`Order ${req.params.id} - Optimized query results:`);
+      console.log('- Order details:', orderDetails.length);
+      console.log('- Common items:', commonItems.length);
+      console.log('- Custom items:', customItems.length);
+      console.log('- Question answers:', questionAnswers.length);
 
-      const result = {
+      const orderResponse = {
         order: mappedOrder,
         profile,
-        commonItems: commonItemsData || [],
-        customItems: mappedCustomItems,
-        questionAnswers: mappedQuestionAnswers,
-        orderDetails: mappedOrderDetails
+        commonItems,
+        customItems,
+        questionAnswers,
+        orderDetails
       };
 
-      res.json(result);
+      res.json(orderResponse);
     } catch (error) {
       console.error('Order details fetch error:', error);
       res.status(500).json({ error: "Failed to fetch order details" });
@@ -529,111 +347,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
         query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
       }
 
-      const { data, error } = await query;
+      const { data: profiles, error } = await query;
       if (error) throw error;
-      
-      // Map database field names to frontend field names
-      const mappedData = (data || []).map(profile => ({
-        ...profile,
-        fullName: profile.full_name,
-        phoneNumber: profile.phone_number,
-        avatarUrl: profile.avatar_url,
-        createdAt: profile.created_at,
-        updatedAt: profile.updated_at
-      }));
-      
 
-      
-      res.json(mappedData);
+      const mappedProfiles = (profiles || []).map(profile => ({
+        id: profile.id,
+        email: profile.email,
+        fullName: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null,
+        phoneNumber: profile.phone,
+        avatarUrl: profile.avatar_url || null,
+        createdAt: profile.created_at,
+        updatedAt: profile.updated_at,
+      }));
+
+      res.json(mappedProfiles);
     } catch (error) {
-      console.error("Error fetching profiles:", error);
-      res.status(500).json({ error: "Failed to fetch profiles", details: error instanceof Error ? error.message : String(error) });
+      console.error('Profiles fetch error:', error);
+      res.status(500).json({ error: "Failed to fetch profiles" });
     }
   });
 
   app.get("/api/profiles/:id", async (req, res) => {
     try {
-      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
-      
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', req.params.id)
-        .single();
-      
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return res.status(404).json({ error: "Profile not found" });
-        }
-        throw error;
+      const profile = await storage.getProfile(req.params.id);
+      if (!profile) {
+        return res.status(404).json({ error: "Profile not found" });
       }
-      
-      // Map database field names to frontend field names
-      const mappedData = {
-        ...data,
-        fullName: data.full_name,
-        phoneNumber: data.phone_number,
-        avatarUrl: data.avatar_url,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-      };
-      
-      res.json(mappedData);
+      res.json(profile);
     } catch (error) {
-      console.error("Error fetching profile:", error);
       res.status(500).json({ error: "Failed to fetch profile" });
     }
   });
 
   app.put("/api/profiles/:id", async (req, res) => {
     try {
-      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
-      
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      // Map frontend field names to database field names (excluding email)
-      const updates = {
-        full_name: req.body.fullName,
-        phone_number: req.body.phoneNumber,
-        avatar_url: req.body.avatarUrl,
-        updated_at: new Date().toISOString()
-      };
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', req.params.id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      // Map database field names to frontend field names
-      const mappedData = {
-        ...data,
-        fullName: data.full_name,
-        phoneNumber: data.phone_number,
-        avatarUrl: data.avatar_url,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-      };
-      
-      res.json(mappedData);
+      const profile = await storage.updateProfile(req.params.id, req.body);
+      res.json(profile);
     } catch (error) {
-      console.error("Error updating profile:", error);
-      res.status(500).json({ error: "Failed to update profile", details: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "Failed to update profile" });
     }
   });
 
-  // Dashboard Routes
+  // Service Types Routes
+  app.get("/api/service-types", async (req, res) => {
+    try {
+      const serviceTypes = await storage.getServiceTypes();
+      res.json(serviceTypes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch service types" });
+    }
+  });
+
+  app.get("/api/service-types/:id", async (req, res) => {
+    try {
+      const serviceType = await storage.getServiceType(req.params.id);
+      if (!serviceType) {
+        return res.status(404).json({ error: "Service type not found" });
+      }
+      res.json(serviceType);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch service type" });
+    }
+  });
+
+  // Common Items Routes
+  app.get("/api/common-items", async (req, res) => {
+    try {
+      const serviceTypeId = req.query.serviceTypeId as string;
+      const commonItems = await storage.getCommonItems(serviceTypeId);
+      res.json(commonItems);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch common items" });
+    }
+  });
+
+  // Service Questions Routes
+  app.get("/api/service-questions", async (req, res) => {
+    try {
+      const serviceTypeId = req.query.serviceTypeId as string;
+      const questions = await storage.getServiceQuestions(serviceTypeId);
+      res.json(questions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch service questions" });
+    }
+  });
+
+  // Dashboard metrics
   app.get("/api/dashboard/metrics", async (req, res) => {
     try {
       const metrics = await storage.getDashboardMetrics();
       res.json(metrics);
     } catch (error) {
+      console.error('Dashboard metrics error:', error);
       res.status(500).json({ error: "Failed to fetch dashboard metrics" });
     }
   });
@@ -643,10 +448,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const orders = await storage.getRecentOrdersRequiringAttention();
       res.json(orders);
     } catch (error) {
+      console.error('Recent orders error:', error);
       res.status(500).json({ error: "Failed to fetch recent orders" });
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  return server;
 }
