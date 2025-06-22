@@ -26,45 +26,79 @@ export async function registerRoutes(app: Express) {
         rating: req.query.rating ? parseFloat(req.query.rating as string) : undefined,
       };
 
+      console.log('Vendor API called with filters:', filters);
+
+      // Start with a basic query to get all vendors first
       let query = supabase
         .from('vendor_profiles')
-        .select('*')
-        .order('rating', { ascending: false });
+        .select('*');
 
-      // Filter by city if provided
-      if (filters.city) {
-        query = query.eq('city', filters.city);
+      // First, let's get all vendors to see what's in the table
+      const { data: allVendors, error: allError } = await supabase
+        .from('vendor_profiles')
+        .select('*');
+
+      console.log('Total vendors in database:', allVendors?.length || 0);
+      if (allVendors && allVendors.length > 0) {
+        console.log('Sample vendor:', JSON.stringify(allVendors[0], null, 2));
       }
 
-      // Filter by service type if provided
-      if (filters.serviceType) {
-        query = query.contains('service_types', [filters.serviceType]);
-      }
+      // Apply filters only if we have vendors
+      if (allVendors && allVendors.length > 0) {
+        query = supabase
+          .from('vendor_profiles')
+          .select('*')
+          .order('rating', { ascending: false });
 
-      // Filter by status (approved vendors only by default)
-      const statusFilter = filters.status || 'approved';
-      if (statusFilter !== 'all') {
-        if (statusFilter === 'online') {
-          // Filter for approved AND online vendors
-          query = query.eq('status', 'approved').eq('is_online', true);
-        } else {
-          query = query.eq('status', statusFilter);
+        // Filter by city if provided
+        if (filters.city) {
+          console.log('Filtering by city:', filters.city);
+          query = query.eq('city', filters.city);
         }
+
+        // Filter by service type if provided
+        if (filters.serviceType) {
+          console.log('Filtering by service type:', filters.serviceType);
+          query = query.contains('service_types', [filters.serviceType]);
+        }
+
+        // Filter by status - default to show all if not specified
+        const statusFilter = filters.status || 'all';
+        console.log('Status filter:', statusFilter);
+        
+        if (statusFilter === 'approved') {
+          query = query.eq('status', 'approved');
+        } else if (statusFilter === 'online') {
+          query = query.eq('status', 'approved').eq('is_online', true);
+        }
+        // For 'all', don't add status filter
+
+        // Filter by minimum rating if provided
+        if (filters.rating) {
+          console.log('Filtering by rating >= :', filters.rating);
+          query = query.gte('rating', filters.rating);
+        }
+
+        const { data: vendors, error } = await query;
+
+        if (error) {
+          console.error('Error fetching filtered vendors:', error);
+          return res.status(500).json({ error: 'Failed to fetch vendors' });
+        }
+
+        console.log('Filtered vendors count:', vendors?.length || 0);
+        res.json(vendors || []);
+      } else {
+        // No vendors in database or error fetching
+        if (allError) {
+          console.error('Error fetching all vendors:', allError);
+          return res.status(500).json({ error: 'Failed to fetch vendors' });
+        }
+        
+        console.log('No vendors found in database');
+        res.json([]);
       }
 
-      // Filter by minimum rating if provided
-      if (filters.rating) {
-        query = query.gte('rating', filters.rating);
-      }
-
-      const { data: vendors, error } = await query;
-
-      if (error) {
-        console.error('Error fetching vendors:', error);
-        return res.status(500).json({ error: 'Failed to fetch vendors' });
-      }
-
-      res.json(vendors || []);
     } catch (error) {
       console.error('Error in vendors API:', error);
       res.status(500).json({ error: 'Internal server error' });
