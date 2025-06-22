@@ -44,7 +44,12 @@ export async function registerRoutes(app: Express) {
       // Filter by status (approved vendors only by default)
       const statusFilter = filters.status || 'approved';
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        if (statusFilter === 'online') {
+          // Filter for approved AND online vendors
+          query = query.eq('status', 'approved').eq('is_online', true);
+        } else {
+          query = query.eq('status', statusFilter);
+        }
       }
 
       // Filter by minimum rating if provided
@@ -384,6 +389,9 @@ export async function registerRoutes(app: Express) {
       if (updateData.notes !== undefined) {
         dbUpdateData['notes'] = updateData.notes;
       }
+      if (updateData.vendorId !== undefined) {
+        dbUpdateData['vendor_id'] = updateData.vendorId;
+      }
       
       console.log('Mapped database update data:', dbUpdateData);
       
@@ -424,6 +432,7 @@ export async function registerRoutes(app: Express) {
         createdAt: updatedOrder.created_at,
         updatedAt: updatedOrder.updated_at,
         userId: updatedOrder.user_id,
+        vendorId: updatedOrder.vendor_id,
       };
       
       console.log(`Successfully updated order ${id}`);

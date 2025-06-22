@@ -301,6 +301,94 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
             <div className="space-y-6">
               <h4 className="font-semibold text-admin-slate mb-3">Order Management</h4>
               
+              {/* Vendor Assignment */}
+              <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-medium text-admin-slate">Assign to Vendor</h5>
+                  {orderDetails?.order?.vendorId && (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      Already Assigned
+                    </Badge>
+                  )}
+                </div>
+                
+                {/* Vendor Filter */}
+                <div className="flex gap-2">
+                  <Select value={vendorFilter} onValueChange={setVendorFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter vendors" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Vendors</SelectItem>
+                      <SelectItem value="approved">Approved Only</SelectItem>
+                      <SelectItem value="online">Online Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="text-sm text-gray-600 flex items-center">
+                    {vendorsLoading ? "Loading vendors..." : `${vendors.length} vendors found`}
+                  </div>
+                </div>
+
+                {/* Vendor Selection */}
+                <div className="flex gap-2">
+                  <Select value={selectedVendor} onValueChange={setSelectedVendor}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vendors.map((vendor: any) => (
+                        <SelectItem key={vendor.id} value={vendor.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <div>
+                              <span className="font-medium">{vendor.business_name}</span>
+                              <span className="text-sm text-gray-500 ml-2">
+                                ({vendor.full_name})
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 ml-4">
+                              <span className="text-xs text-yellow-600">
+                                ⭐ {vendor.rating?.toFixed(1) || 'No rating'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {vendor.city}
+                              </span>
+                              {vendor.is_online && (
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                              )}
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      {vendors.length === 0 && !vendorsLoading && (
+                        <SelectItem value="no-vendors" disabled>
+                          No vendors available for this service
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={handleAssignVendor}
+                    disabled={assignVendorMutation.isPending || !selectedVendor || selectedVendor === "no-vendors"}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {assignVendorMutation.isPending ? "Assigning..." : "Assign Vendor"}
+                  </Button>
+                </div>
+
+                {/* Current Assignment Info */}
+                {orderDetails?.order?.vendorId && (
+                  <div className="mt-3 p-3 bg-white rounded border">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Currently assigned to:</span> Vendor ID {orderDetails.order.vendorId}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      To reassign, select a new vendor and click "Assign Vendor"
+                    </p>
+                  </div>
+                )}
+              </div>
+              
               {/* Status Update */}
               <div className="max-w-md">
                 <Label htmlFor="newStatus" className="text-sm font-medium text-gray-700">
@@ -313,6 +401,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Assigned">Assigned</SelectItem>
                       <SelectItem value="Confirmed">Confirmed</SelectItem>
                       <SelectItem value="In Progress">In Progress</SelectItem>
                       <SelectItem value="Completed">Completed</SelectItem>
