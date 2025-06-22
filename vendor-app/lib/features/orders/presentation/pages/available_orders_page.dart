@@ -22,7 +22,9 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
   @override
   void initState() {
     super.initState();
-    _refreshOrders();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshOrders();
+    });
   }
 
   Future<void> _refreshOrders() async {

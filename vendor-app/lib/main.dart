@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
-import 'core/services/storage_service.dart';
 import 'core/services/auth_service.dart';
-import 'core/services/notification_service.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/dashboard/presentation/pages/dashboard_page.dart';
 import 'features/orders/presentation/controllers/orders_controller.dart';
@@ -16,10 +15,6 @@ import 'features/auth/presentation/controllers/auth_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize services
-  await StorageService.init();
-  await NotificationService.init();
   
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
@@ -35,6 +30,11 @@ void main() async {
       systemNavigationBarColor: Colors.white,
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
+  );
+
+  await Supabase.initialize(
+    url: 'https://tdqqrjssnylfbjmpgaei.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw',
   );
 
   runApp(const VendorApp());
@@ -66,6 +66,7 @@ class VendorApp extends StatelessWidget {
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
+    Get.lazyPut<AuthService>(() => AuthService());
     Get.lazyPut<AuthController>(() => AuthController());
     Get.lazyPut<OrdersController>(() => OrdersController());
     Get.lazyPut<ProfileController>(() => ProfileController());

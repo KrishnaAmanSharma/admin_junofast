@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/order_model.dart';
@@ -45,7 +46,7 @@ class OrdersController extends GetxController {
           .from('orders')
           .select('''
             *,
-            order_common_items (
+            common_items_in_orders (
               id,
               quantity,
               common_items (
@@ -55,7 +56,7 @@ class OrdersController extends GetxController {
                 image_url
               )
             ),
-            order_custom_items (*),
+            custom_items (*),
             order_question_answers (
               question_id,
               answer,
@@ -66,9 +67,8 @@ class OrdersController extends GetxController {
             )
           ''')
           .eq('status', AppConstants.orderStatusPending)
-          .is_('vendor_id', null)
-          .in_('service_type', vendorServiceTypes)
-          .eq('city', vendorCity)
+          .not('vendor_id', 'is', null)
+          .inFilter('service_type', vendorServiceTypes)
           .order('created_at', ascending: false);
 
       _availableOrders.clear();
@@ -79,6 +79,7 @@ class OrdersController extends GetxController {
 
       _error = null;
     } catch (e) {
+      print('Failed to load available orders: ${e.toString()}');
       _error = 'Failed to load available orders: ${e.toString()}';
     } finally {
       _setLoading(false);
@@ -101,7 +102,7 @@ class OrdersController extends GetxController {
               phone_number,
               email
             ),
-            order_common_items (
+            common_items_in_orders (
               id,
               quantity,
               common_items (
@@ -111,7 +112,7 @@ class OrdersController extends GetxController {
                 image_url
               )
             ),
-            order_custom_items (*),
+            custom_items (*),
             order_question_answers (
               question_id,
               answer,
@@ -152,7 +153,7 @@ class OrdersController extends GetxController {
       };
 
       if (proposedPrice != null) {
-        updateData['final_price'] = proposedPrice;
+        updateData['final_price'] = proposedPrice.toString();
       }
 
       await _supabase
@@ -270,7 +271,7 @@ class OrdersController extends GetxController {
 
   OrderModel _parseOrderFromResponse(Map<String, dynamic> data, {bool includeCustomerInfo = false}) {
     // Parse common items
-    final commonItemsData = data['order_common_items'] as List<dynamic>? ?? [];
+    final commonItemsData = data['common_items_in_orders'] as List<dynamic>? ?? [];
     final commonItems = commonItemsData.map((item) {
       final commonItemData = item['common_items'];
       return CommonItemModel(
@@ -283,7 +284,7 @@ class OrdersController extends GetxController {
     }).toList();
 
     // Parse custom items
-    final customItemsData = data['order_custom_items'] as List<dynamic>? ?? [];
+    final customItemsData = data['custom_items'] as List<dynamic>? ?? [];
     final customItems = customItemsData.map((item) => CustomItemModel(
       id: item['id'],
       name: item['name'],

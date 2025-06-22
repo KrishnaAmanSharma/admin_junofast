@@ -16,7 +16,9 @@ class _EarningsPageState extends State<EarningsPage> {
   @override
   void initState() {
     super.initState();
-    earningsController.loadEarnings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      earningsController.loadEarnings();
+    });
   }
 
   @override
@@ -177,7 +179,7 @@ class _EarningsPageState extends State<EarningsPage> {
               child: _buildStatCard(
                 'This Week',
                 '\$${controller.weeklyEarnings.toStringAsFixed(2)}',
-                Icons.calendar_week,
+                Icons.calendar_month,
                 AppConstants.secondaryColor,
               ),
             ),

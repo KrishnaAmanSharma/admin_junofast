@@ -71,7 +71,7 @@ class EarningsOverviewCard extends StatelessWidget {
                             title: 'This Week',
                             amount: controller.weeklyEarnings,
                             color: AppConstants.secondaryColor,
-                            icon: Icons.calendar_week,
+                            icon: Icons.calendar_month,
                           ),
                         ),
                       ],

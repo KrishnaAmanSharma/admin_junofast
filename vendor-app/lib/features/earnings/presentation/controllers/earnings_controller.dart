@@ -119,7 +119,7 @@ class EarningsController extends GetxController {
               'amount': entry.value,
             })
         .toList()
-      ..sort((a, b) => b['date'].compareTo(a['date']));
+      ..sort((a, b) => (b['date'] as String? ?? '').compareTo(a['date'] as String? ?? ''));
 
     // Keep only last 30 days
     if (_earningsHistory.length > 30) {
