@@ -11,6 +11,61 @@ import * as schema from "@shared/schema";
 export async function registerRoutes(app: Express) {
   const server = createServer(app);
 
+  // Vendors Routes
+  app.get("/api/vendors", async (req, res) => {
+    try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const filters = {
+        city: req.query.city as string,
+        serviceType: req.query.serviceType as string,
+        status: req.query.status as string,
+        rating: req.query.rating ? parseFloat(req.query.rating as string) : undefined,
+      };
+
+      let query = supabase
+        .from('vendor_profiles')
+        .select('*')
+        .order('rating', { ascending: false });
+
+      // Filter by city if provided
+      if (filters.city) {
+        query = query.eq('city', filters.city);
+      }
+
+      // Filter by service type if provided
+      if (filters.serviceType) {
+        query = query.contains('service_types', [filters.serviceType]);
+      }
+
+      // Filter by status (approved vendors only by default)
+      const statusFilter = filters.status || 'approved';
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      // Filter by minimum rating if provided
+      if (filters.rating) {
+        query = query.gte('rating', filters.rating);
+      }
+
+      const { data: vendors, error } = await query;
+
+      if (error) {
+        console.error('Error fetching vendors:', error);
+        return res.status(500).json({ error: 'Failed to fetch vendors' });
+      }
+
+      res.json(vendors || []);
+    } catch (error) {
+      console.error('Error in vendors API:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Orders Routes
   app.get("/api/orders", async (req, res) => {
     try {

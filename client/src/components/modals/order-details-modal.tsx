@@ -20,6 +20,8 @@ interface OrderDetailsModalProps {
 export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModalProps) {
   const [newPrice, setNewPrice] = useState("");
   const [newStatus, setNewStatus] = useState("");
+  const [selectedVendor, setSelectedVendor] = useState("");
+  const [vendorFilter, setVendorFilter] = useState("all");
   const { toast } = useToast();
 
   const { data: orderDetails, isLoading } = useQuery({
@@ -28,6 +30,37 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     queryFn: async () => {
       const response = await fetch(`/api/orders/${orderId}`);
       if (!response.ok) throw new Error('Failed to fetch order details');
+      return response.json();
+    }
+  });
+
+  // Helper function to extract city from address
+  const extractCityFromAddress = (address: string | null) => {
+    if (!address) return null;
+    // Simple extraction - you might want to enhance this based on your address format
+    const parts = address.split(',');
+    return parts.length > 1 ? parts[parts.length - 2].trim() : null;
+  };
+
+  const { data: vendors = [], isLoading: vendorsLoading } = useQuery({
+    queryKey: ["/api/vendors", orderDetails?.order?.serviceType, orderDetails?.order?.pickupAddress, vendorFilter],
+    enabled: isOpen && !!orderDetails?.order,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (orderDetails?.order?.serviceType) {
+        params.append('serviceType', orderDetails.order.serviceType);
+      }
+      // Extract city from pickup address if available
+      const city = extractCityFromAddress(orderDetails?.order?.pickupAddress);
+      if (city) {
+        params.append('city', city);
+      }
+      if (vendorFilter !== 'all') {
+        params.append('status', vendorFilter);
+      }
+      
+      const response = await fetch(`/api/vendors?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch vendors');
       return response.json();
     }
   });
@@ -45,12 +78,35 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       });
       setNewPrice("");
       setNewStatus("");
+      setSelectedVendor("");
       onClose();
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to update order",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const assignVendorMutation = useMutation({
+    mutationFn: async ({ orderId, vendorId }: { orderId: string; vendorId: string }) => {
+      await apiRequest("PUT", `/api/orders/${orderId}`, { vendorId, status: "Assigned" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({
+        title: "Success",
+        description: "Vendor assigned successfully",
+      });
+      setSelectedVendor("");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to assign vendor",
         variant: "destructive",
       });
     },
@@ -80,6 +136,15 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     updateOrderMutation.mutate({
       id: orderId,
       updates,
+    });
+  };
+
+  const handleAssignVendor = () => {
+    if (!selectedVendor || !orderId) return;
+    
+    assignVendorMutation.mutate({
+      orderId,
+      vendorId: selectedVendor,
     });
   };
 
