@@ -92,7 +92,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
   const assignVendorMutation = useMutation({
     mutationFn: async ({ orderId, vendorId }: { orderId: string; vendorId: string }) => {
-      await apiRequest("PUT", `/api/orders/${orderId}`, { vendorId, status: "Assigned" });
+      await apiRequest("PUT", `/api/orders/${orderId}`, { vendorId, status: "Confirmed" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
@@ -401,7 +401,6 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="Assigned">Assigned</SelectItem>
                       <SelectItem value="Confirmed">Confirmed</SelectItem>
                       <SelectItem value="In Progress">In Progress</SelectItem>
                       <SelectItem value="Completed">Completed</SelectItem>
