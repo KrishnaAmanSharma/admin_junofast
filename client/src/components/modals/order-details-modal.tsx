@@ -48,6 +48,17 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     return parts.length > 1 ? parts[parts.length - 2].trim() : null;
   };
 
+  // Vendor responses query
+  const { data: vendorResponses, isLoading: responsesLoading } = useQuery({
+    queryKey: ["/api/orders", orderId, "vendor-responses"],
+    enabled: isOpen && !!orderId,
+    queryFn: async () => {
+      const response = await fetch(`/api/orders/${orderId}/vendor-responses`);
+      if (!response.ok) throw new Error('Failed to fetch vendor responses');
+      return response.json();
+    }
+  });
+
   const { data: vendors = [], isLoading: vendorsLoading } = useQuery({
     queryKey: ["/api/vendors", orderDetails?.order?.serviceType, orderDetails?.order?.pickupAddress, vendorFilter],
     enabled: isOpen && !!orderDetails?.order,
@@ -102,21 +113,19 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       vendorIds: string | string[]; 
       assignmentType: string;
     }) => {
-      if (assignmentType === "single") {
-        await apiRequest("PUT", `/api/orders/${orderId}`, { vendorId: vendorIds, status: "Confirmed" });
-      } else {
-        await apiRequest("POST", `/api/orders/${orderId}/broadcast`, { 
-          vendorIds: Array.isArray(vendorIds) ? vendorIds : [vendorIds],
-          criteria: broadcastCriteria 
-        });
-      }
+      // Both single and broadcast now use the broadcast system
+      await apiRequest("POST", `/api/orders/${orderId}/broadcast`, { 
+        vendorIds: Array.isArray(vendorIds) ? vendorIds : [vendorIds],
+        criteria: broadcastCriteria,
+        assignmentType 
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({
         title: "Success",
-        description: assignmentType === "single" ? "Vendor assigned successfully" : "Order broadcasted to vendors successfully",
+        description: assignmentType === "single" ? "Order sent to vendor - awaiting acceptance" : "Order broadcasted to vendors successfully",
       });
       setSelectedVendor("");
     },
@@ -214,6 +223,30 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   const getUniqueCities = (): string[] => {
     const cities = vendors.map((vendor: any) => vendor.city).filter(Boolean) as string[];
     return Array.from(new Set(cities));
+  };
+
+  const handleApprovePrice = async (responseId: string, approved: boolean) => {
+    try {
+      await apiRequest("POST", `/api/orders/${orderId}/approve-price/${responseId}`, {
+        approved,
+        adminResponse: approved ? "Price approved by admin" : "Price rejected by admin"
+      });
+      
+      // Refresh vendor responses
+      queryClient.invalidateQueries({ queryKey: ["/api/orders", orderId, "vendor-responses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      
+      toast({
+        title: approved ? "Price Approved" : "Price Rejected",
+        description: approved ? "Vendor price has been approved and order assigned" : "Vendor price request has been rejected",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process price approval",
+        variant: "destructive",
+      });
+    }
   };
 
   const currentStatus = orderDetails?.order?.status;
@@ -466,7 +499,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700"
                       >
-                        {assignVendorMutation.isPending ? "Assigning..." : "Assign"}
+                        {assignVendorMutation.isPending ? "Sending..." : "Send to Vendor"}
                       </Button>
                     </div>
                   </div>
@@ -482,7 +515,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                           onValueChange={(value) => 
                             setBroadcastCriteria(prev => ({
                               ...prev, 
-                              cities: value ? value.split(",") : []
+                              cities: value === "all-cities" ? [] : value ? value.split(",") : []
                             }))
                           }
                         >
@@ -490,7 +523,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                             <SelectValue placeholder="All cities" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Cities</SelectItem>
+                            <SelectItem value="all-cities">All Cities</SelectItem>
                             {getUniqueCities().map((city) => (
                               <SelectItem key={city} value={city}>{city}</SelectItem>
                             ))}
@@ -550,6 +583,93 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                         {assignVendorMutation.isPending ? "Broadcasting..." : "Broadcast Order"}
                       </Button>
                     </div>
+                  </div>
+                )}
+
+                {/* Vendor Responses Section */}
+                {vendorResponses && (vendorResponses.broadcasts?.length > 0 || vendorResponses.responses?.length > 0) && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                    <h6 className="font-medium text-admin-slate mb-3">Vendor Responses</h6>
+                    
+                    {/* Broadcasts Status */}
+                    {vendorResponses.broadcasts?.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        <p className="text-sm font-medium text-gray-700">Sent to {vendorResponses.broadcasts.length} vendors:</p>
+                        <div className="grid gap-2">
+                          {vendorResponses.broadcasts.map((broadcast: any) => (
+                            <div key={broadcast.id} className="flex items-center justify-between p-2 bg-white rounded border text-sm">
+                              <div>
+                                <span className="font-medium">{broadcast.vendor_profiles?.business_name}</span>
+                                <span className="text-gray-500 ml-2">({broadcast.vendor_profiles?.city})</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                  broadcast.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                  broadcast.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                  broadcast.status === 'expired' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {broadcast.status}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {new Date(broadcast.broadcast_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Price Update Requests */}
+                    {vendorResponses.responses?.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-700">Price Update Requests:</p>
+                        <div className="grid gap-2">
+                          {vendorResponses.responses.map((response: any) => (
+                            <div key={response.id} className="p-3 bg-white rounded border">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium">{response.vendor_profiles?.business_name}</span>
+                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                  response.admin_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {response.admin_approved ? 'Approved' : 'Pending Review'}
+                                </span>
+                              </div>
+                              {response.proposed_price && (
+                                <div className="text-sm text-gray-600 mb-2">
+                                  Proposed Price: ₹{response.proposed_price}
+                                  {response.original_price && (
+                                    <span className="ml-2 text-gray-400">(Original: ₹{response.original_price})</span>
+                                  )}
+                                </div>
+                              )}
+                              {response.message && (
+                                <p className="text-sm text-gray-600 mb-2">{response.message}</p>
+                              )}
+                              {!response.admin_approved && (
+                                <div className="flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={() => handleApprovePrice(response.id, true)}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleApprovePrice(response.id, false)}
+                                  >
+                                    Reject
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
