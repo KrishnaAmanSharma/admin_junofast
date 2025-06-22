@@ -491,7 +491,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="">All Cities</SelectItem>
-                            {getUniqueCities().map((city: string) => (
+                            {getUniqueCities().map((city) => (
                               <SelectItem key={city} value={city}>{city}</SelectItem>
                             ))}
                           </SelectContent>
