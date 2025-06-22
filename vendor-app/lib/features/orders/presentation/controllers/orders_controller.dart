@@ -38,42 +38,51 @@ class OrdersController extends GetxController {
         throw Exception('Vendor profile not found');
       }
 
-      final vendorServiceTypes = List<String>.from(vendorProfile['service_types'] ?? []);
-      final vendorCity = vendorProfile['city'] ?? '';
+      final vendorId = authService.currentUser?.id;
+      if (vendorId == null) {
+        throw Exception('Vendor not authenticated');
+      }
 
-      // Query available orders (pending status, no vendor assigned)
+      // Query order broadcasts sent to this vendor that are still pending
       final response = await _supabase
-          .from('orders')
+          .from('order_broadcasts')
           .select('''
             *,
-            common_items_in_orders (
-              id,
-              quantity,
-              common_items (
+            orders!inner (
+              *,
+              common_items_in_orders (
                 id,
-                name,
-                description,
-                image_url
-              )
-            ),
-            custom_items (*),
-            order_question_answers (
-              question_id,
-              answer,
-              service_questions (
-                question,
-                question_type
+                quantity,
+                common_items (
+                  id,
+                  name,
+                  description,
+                  image_url
+                )
+              ),
+              custom_items (*),
+              order_question_answers (
+                question_id,
+                answer,
+                service_questions (
+                  question,
+                  question_type
+                )
               )
             )
           ''')
-          .eq('status', AppConstants.orderStatusPending)
-          .not('vendor_id', 'is', null)
-          .inFilter('service_type', vendorServiceTypes)
-          .order('created_at', ascending: false);
+          .eq('vendor_id', vendorId)
+          .eq('status', 'pending')
+          .gte('expires_at', DateTime.now().toIso8601String())
+          .order('broadcast_at', ascending: false);
 
       _availableOrders.clear();
-      for (final orderData in response) {
+      for (final broadcastData in response) {
+        final orderData = broadcastData['orders'];
         final order = _parseOrderFromResponse(orderData);
+        // Add broadcast info to the order
+        order.broadcastId = broadcastData['id'];
+        order.broadcastExpiresAt = DateTime.parse(broadcastData['expires_at']);
         _availableOrders.add(order);
       }
 
@@ -145,29 +154,77 @@ class OrdersController extends GetxController {
         throw Exception('Vendor not authenticated');
       }
 
-      // Update order with vendor assignment
-      final updateData = {
-        'vendor_id': vendorId,
-        'status': AppConstants.orderStatusAssigned,
-        'accepted_at': DateTime.now().toIso8601String(),
-      };
-
-      if (proposedPrice != null) {
-        updateData['final_price'] = proposedPrice.toString();
+      // Find the broadcast record for this order and vendor
+      final order = _availableOrders.firstWhere((o) => o.id == orderId);
+      final broadcastId = order.broadcastId;
+      
+      if (broadcastId == null) {
+        throw Exception('Broadcast not found');
       }
 
+      // Update the broadcast status to accepted
       await _supabase
-          .from('orders')
-          .update(updateData)
-          .eq('id', orderId);
+          .from('order_broadcasts')
+          .update({
+            'status': 'accepted',
+            'response_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', broadcastId);
+
+      // Create vendor response record
+      final responseData = {
+        'broadcast_id': broadcastId,
+        'order_id': orderId,
+        'vendor_id': vendorId,
+        'response_type': 'accept',
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      // If vendor proposed a different price, create price update request
+      if (proposedPrice != null && proposedPrice != order.estimatedPrice) {
+        responseData['response_type'] = 'price_update';
+        responseData['proposed_price'] = proposedPrice;
+        responseData['original_price'] = order.estimatedPrice;
+        responseData['message'] = 'Vendor proposed price: \$${proposedPrice.toStringAsFixed(2)}';
+        
+        // Update order status to indicate price update needed
+        await _supabase
+            .from('orders')
+            .update({
+              'status': 'Price Updated',
+              'vendor_id': vendorId,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', orderId);
+      } else {
+        // Accept at original price - assign vendor directly
+        await _supabase
+            .from('orders')
+            .update({
+              'vendor_id': vendorId,
+              'status': 'Vendor Accepted',
+              'accepted_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', orderId);
+      }
+
+      // Insert vendor response
+      await _supabase
+          .from('vendor_responses')
+          .insert(responseData);
 
       // Remove from available orders and refresh my orders
       _availableOrders.removeWhere((order) => order.id == orderId);
       await loadMyOrders();
 
+      final message = proposedPrice != null && proposedPrice != order.estimatedPrice
+          ? 'Order accepted with price proposal. Waiting for admin approval.'
+          : 'Order accepted successfully!';
+
       Get.snackbar(
         'Success',
-        AppConstants.successOrderAccepted,
+        message,
         backgroundColor: AppConstants.successColor,
         colorText: Colors.white,
       );
@@ -183,6 +240,67 @@ class OrdersController extends GetxController {
       return false;
     } finally {
       _setAcceptingOrder(false);
+    }
+  }
+
+  Future<bool> rejectOrder(String orderId, String reason) async {
+    try {
+      final authService = Get.find<AuthService>();
+      final vendorId = authService.currentUser?.id;
+      
+      if (vendorId == null) {
+        throw Exception('Vendor not authenticated');
+      }
+
+      // Find the broadcast record for this order and vendor
+      final order = _availableOrders.firstWhere((o) => o.id == orderId);
+      final broadcastId = order.broadcastId;
+      
+      if (broadcastId == null) {
+        throw Exception('Broadcast not found');
+      }
+
+      // Update the broadcast status to rejected
+      await _supabase
+          .from('order_broadcasts')
+          .update({
+            'status': 'rejected',
+            'response_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', broadcastId);
+
+      // Create vendor response record
+      await _supabase
+          .from('vendor_responses')
+          .insert({
+            'broadcast_id': broadcastId,
+            'order_id': orderId,
+            'vendor_id': vendorId,
+            'response_type': 'reject',
+            'message': reason,
+            'created_at': DateTime.now().toIso8601String(),
+          });
+
+      // Remove from available orders
+      _availableOrders.removeWhere((order) => order.id == orderId);
+      update();
+
+      Get.snackbar(
+        'Order Rejected',
+        'Order has been declined',
+        backgroundColor: AppConstants.warningColor,
+        colorText: Colors.white,
+      );
+
+      return true;
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to reject order: ${e.toString()}',
+        backgroundColor: AppConstants.errorColor,
+        colorText: Colors.white,
+      );
+      return false;
     }
   }
 

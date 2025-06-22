@@ -17,6 +17,10 @@ class OrderModel {
   final double? distance;
   final int priority;
   final String? customerContactMasked; // Only shows after acceptance
+  
+  // Broadcast system fields
+  String? broadcastId;
+  DateTime? broadcastExpiresAt;
 
   OrderModel({
     required this.id,

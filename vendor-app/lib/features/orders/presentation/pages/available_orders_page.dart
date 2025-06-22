@@ -127,6 +127,7 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
                         order: order,
                         isAvailable: true,
                         onAccept: () => _showAcceptOrderDialog(order),
+                        onReject: () => _showRejectOrderDialog(order),
                         onViewDetails: () => _viewOrderDetails(order),
                       );
                     },
@@ -292,6 +293,69 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Accept Order'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRejectOrderDialog(OrderModel order) {
+    final reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reject Order'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to reject this ${order.serviceType} order?',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Reason (optional)',
+                hintText: 'Why are you rejecting this order?',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          GetBuilder<OrdersController>(
+            builder: (controller) => ElevatedButton(
+              onPressed: controller.isAcceptingOrder 
+                  ? null 
+                  : () async {
+                      final reason = reasonController.text.trim();
+                      final success = await controller.rejectOrder(
+                        order.id, 
+                        reason.isEmpty ? 'No reason provided' : reason
+                      );
+                      if (success) {
+                        Navigator.of(context).pop();
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.errorColor,
+              ),
+              child: controller.isAcceptingOrder
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Reject Order'),
             ),
           ),
         ],
