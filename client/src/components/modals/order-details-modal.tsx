@@ -22,6 +22,12 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   const [newStatus, setNewStatus] = useState("");
   const [selectedVendor, setSelectedVendor] = useState("");
   const [vendorFilter, setVendorFilter] = useState("all");
+  const [assignmentType, setAssignmentType] = useState("single"); // single, broadcast
+  const [broadcastCriteria, setBroadcastCriteria] = useState({
+    cities: [] as string[],
+    minRating: 0,
+    maxVendors: 10
+  });
   const { toast } = useToast();
 
   const { data: orderDetails, isLoading } = useQuery({
@@ -91,22 +97,33 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   });
 
   const assignVendorMutation = useMutation({
-    mutationFn: async ({ orderId, vendorId }: { orderId: string; vendorId: string }) => {
-      await apiRequest("PUT", `/api/orders/${orderId}`, { vendorId, status: "Confirmed" });
+    mutationFn: async ({ orderId, vendorIds, assignmentType }: { 
+      orderId: string; 
+      vendorIds: string | string[]; 
+      assignmentType: string;
+    }) => {
+      if (assignmentType === "single") {
+        await apiRequest("PUT", `/api/orders/${orderId}`, { vendorId: vendorIds, status: "Confirmed" });
+      } else {
+        await apiRequest("POST", `/api/orders/${orderId}/broadcast`, { 
+          vendorIds: Array.isArray(vendorIds) ? vendorIds : [vendorIds],
+          criteria: broadcastCriteria 
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({
         title: "Success",
-        description: "Vendor assigned successfully",
+        description: assignmentType === "single" ? "Vendor assigned successfully" : "Order broadcasted to vendors successfully",
       });
       setSelectedVendor("");
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to assign vendor",
+        description: assignmentType === "single" ? "Failed to assign vendor" : "Failed to broadcast order",
         variant: "destructive",
       });
     },
@@ -140,12 +157,63 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   };
 
   const handleAssignVendor = () => {
-    if (!selectedVendor || !orderId) return;
+    if (!orderId) return;
     
-    assignVendorMutation.mutate({
-      orderId,
-      vendorId: selectedVendor,
-    });
+    if (assignmentType === "single") {
+      if (!selectedVendor) return;
+      assignVendorMutation.mutate({
+        orderId,
+        vendorIds: selectedVendor,
+        assignmentType: "single"
+      });
+    } else {
+      // Broadcast to filtered vendors
+      const selectedVendorIds = getFilteredVendorsForBroadcast();
+      if (selectedVendorIds.length === 0) {
+        toast({
+          title: "Error",
+          description: "No vendors match the broadcast criteria",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      assignVendorMutation.mutate({
+        orderId,
+        vendorIds: selectedVendorIds,
+        assignmentType: "broadcast"
+      });
+    }
+  };
+
+  const getFilteredVendorsForBroadcast = () => {
+    let filteredVendors = vendors;
+    
+    // Filter by cities if specified
+    if (broadcastCriteria.cities.length > 0) {
+      filteredVendors = filteredVendors.filter((vendor: any) => 
+        broadcastCriteria.cities.includes(vendor.city)
+      );
+    }
+    
+    // Filter by minimum rating
+    if (broadcastCriteria.minRating > 0) {
+      filteredVendors = filteredVendors.filter((vendor: any) => 
+        (vendor.rating || 0) >= broadcastCriteria.minRating
+      );
+    }
+    
+    // Limit number of vendors
+    if (broadcastCriteria.maxVendors > 0) {
+      filteredVendors = filteredVendors.slice(0, broadcastCriteria.maxVendors);
+    }
+    
+    return filteredVendors.map((vendor: any) => vendor.id);
+  };
+
+  const getUniqueCities = (): string[] => {
+    const cities = vendors.map((vendor: any) => vendor.city).filter(Boolean) as string[];
+    return Array.from(new Set(cities));
   };
 
   const currentStatus = orderDetails?.order?.status;
@@ -304,77 +372,186 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
               {/* Vendor Assignment */}
               <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
-                  <h5 className="font-medium text-admin-slate">Assign to Vendor</h5>
+                  <h5 className="font-medium text-admin-slate">Vendor Assignment</h5>
                   {orderDetails?.order?.vendorId && (
                     <Badge variant="secondary" className="bg-green-100 text-green-800">
                       Already Assigned
                     </Badge>
                   )}
                 </div>
-                
-                {/* Vendor Filter */}
-                <div className="flex gap-2">
-                  <Select value={vendorFilter} onValueChange={setVendorFilter}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Filter vendors" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Vendors</SelectItem>
-                      <SelectItem value="approved">Approved Only</SelectItem>
-                      <SelectItem value="online">Online Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="text-sm text-gray-600 flex items-center">
-                    {vendorsLoading ? "Loading vendors..." : `${vendors.length} vendors found`}
+
+                {/* Assignment Type Selection */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Assignment Type</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        value="single"
+                        checked={assignmentType === "single"}
+                        onChange={(e) => setAssignmentType(e.target.value)}
+                        className="text-blue-600"
+                      />
+                      <span className="text-sm">Single Vendor Assignment</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        value="broadcast"
+                        checked={assignmentType === "broadcast"}
+                        onChange={(e) => setAssignmentType(e.target.value)}
+                        className="text-blue-600"
+                      />
+                      <span className="text-sm">Broadcast to Multiple Vendors</span>
+                    </label>
                   </div>
                 </div>
 
-                {/* Vendor Selection */}
-                <div className="flex gap-2">
-                  <Select value={selectedVendor} onValueChange={setSelectedVendor}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select vendor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vendors.map((vendor: any) => (
-                        <SelectItem key={vendor.id} value={vendor.id}>
-                          <div className="flex items-center justify-between w-full">
-                            <div>
-                              <span className="font-medium">{vendor.business_name}</span>
-                              <span className="text-sm text-gray-500 ml-2">
-                                ({vendor.full_name})
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 ml-4">
-                              <span className="text-xs text-yellow-600">
-                                ⭐ {vendor.rating?.toFixed(1) || 'No rating'}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {vendor.city}
-                              </span>
-                              {vendor.is_online && (
-                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                              )}
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                      {vendors.length === 0 && !vendorsLoading && (
-                        <SelectItem value="no-vendors" disabled>
-                          No vendors available for this service
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    onClick={handleAssignVendor}
-                    disabled={assignVendorMutation.isPending || !selectedVendor || selectedVendor === "no-vendors"}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    {assignVendorMutation.isPending ? "Assigning..." : "Assign Vendor"}
-                  </Button>
-                </div>
+                {assignmentType === "single" ? (
+                  // Single Vendor Assignment
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <Select value={vendorFilter} onValueChange={setVendorFilter}>
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Filter vendors" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Vendors</SelectItem>
+                          <SelectItem value="approved">Approved Only</SelectItem>
+                          <SelectItem value="online">Online Only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="text-sm text-gray-600 flex items-center">
+                        {vendorsLoading ? "Loading..." : `${vendors.length} vendors`}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Select value={selectedVendor} onValueChange={setSelectedVendor}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select vendor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vendors.map((vendor: any) => (
+                            <SelectItem key={vendor.id} value={vendor.id}>
+                              <div className="flex items-center justify-between w-full">
+                                <div>
+                                  <span className="font-medium">{vendor.business_name}</span>
+                                  <span className="text-sm text-gray-500 ml-2">
+                                    ({vendor.full_name})
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 ml-4">
+                                  <span className="text-xs text-yellow-600">
+                                    ⭐ {vendor.rating?.toFixed(1) || 'N/A'}
+                                  </span>
+                                  <span className="text-xs text-gray-500">{vendor.city}</span>
+                                  {vendor.is_online && (
+                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                  )}
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                          {vendors.length === 0 && !vendorsLoading && (
+                            <SelectItem value="no-vendors" disabled>
+                              No vendors available
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={handleAssignVendor}
+                        disabled={assignVendorMutation.isPending || !selectedVendor || selectedVendor === "no-vendors"}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {assignVendorMutation.isPending ? "Assigning..." : "Assign"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // Broadcast Assignment
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* City Selection */}
+                      <div>
+                        <Label className="text-sm font-medium">Cities (Optional)</Label>
+                        <Select 
+                          value={broadcastCriteria.cities.join(",")} 
+                          onValueChange={(value) => 
+                            setBroadcastCriteria(prev => ({
+                              ...prev, 
+                              cities: value ? value.split(",") : []
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="All cities" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">All Cities</SelectItem>
+                            {getUniqueCities().map((city: string) => (
+                              <SelectItem key={city} value={city}>{city}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Minimum Rating */}
+                      <div>
+                        <Label className="text-sm font-medium">Minimum Rating</Label>
+                        <Select 
+                          value={broadcastCriteria.minRating.toString()} 
+                          onValueChange={(value) => 
+                            setBroadcastCriteria(prev => ({...prev, minRating: parseFloat(value)}))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Any rating" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">Any Rating</SelectItem>
+                            <SelectItem value="3">3+ Stars</SelectItem>
+                            <SelectItem value="4">4+ Stars</SelectItem>
+                            <SelectItem value="4.5">4.5+ Stars</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 items-end">
+                      <div className="flex-1">
+                        <Label className="text-sm font-medium">Max Vendors to Notify</Label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="50"
+                          value={broadcastCriteria.maxVendors}
+                          onChange={(e) => 
+                            setBroadcastCriteria(prev => ({
+                              ...prev, 
+                              maxVendors: parseInt(e.target.value) || 10
+                            }))
+                          }
+                          className="w-full px-3 py-2 border rounded-md text-sm"
+                          placeholder="10"
+                        />
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {getFilteredVendorsForBroadcast().length} vendors will be notified
+                      </div>
+                      <Button 
+                        onClick={handleAssignVendor}
+                        disabled={assignVendorMutation.isPending || getFilteredVendorsForBroadcast().length === 0}
+                        size="sm"
+                        className="bg-orange-600 hover:bg-orange-700"
+                      >
+                        {assignVendorMutation.isPending ? "Broadcasting..." : "Broadcast Order"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Current Assignment Info */}
                 {orderDetails?.order?.vendorId && (
@@ -383,7 +560,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       <span className="font-medium">Currently assigned to:</span> Vendor ID {orderDetails.order.vendorId}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      To reassign, select a new vendor and click "Assign Vendor"
+                      Status: {orderDetails.order.status}
                     </p>
                   </div>
                 )}

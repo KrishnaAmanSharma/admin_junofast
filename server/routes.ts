@@ -477,6 +477,182 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Order broadcast endpoint for vendor assignment
+  app.post("/api/orders/:id/broadcast", async (req, res) => {
+    try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { id: orderId } = req.params;
+      const { vendorIds, criteria } = req.body;
+      
+      console.log(`Broadcasting order ${orderId} to ${vendorIds.length} vendors`);
+      
+      // Update order status to "Broadcasted"
+      const { error: orderUpdateError } = await supabase
+        .from('orders')
+        .update({ status: 'Broadcasted' })
+        .eq('id', orderId);
+        
+      if (orderUpdateError) {
+        console.error('Error updating order status:', orderUpdateError);
+        return res.status(500).json({ error: 'Failed to update order status' });
+      }
+      
+      // Create broadcast records for each vendor
+      const broadcastRecords = vendorIds.map((vendorId: string) => ({
+        order_id: orderId,
+        vendor_id: vendorId,
+        broadcast_at: new Date().toISOString(),
+        status: 'pending',
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+      }));
+      
+      const { data: broadcasts, error: broadcastError } = await supabase
+        .from('order_broadcasts')
+        .insert(broadcastRecords)
+        .select();
+        
+      if (broadcastError) {
+        console.error('Error creating broadcasts:', broadcastError);
+        return res.status(500).json({ error: 'Failed to broadcast to vendors' });
+      }
+      
+      console.log(`Successfully broadcasted order to ${broadcasts?.length || 0} vendors`);
+      
+      res.json({ 
+        success: true, 
+        broadcastCount: broadcasts?.length || 0,
+        orderId,
+        criteria 
+      });
+      
+    } catch (error) {
+      console.error('Error in order broadcast:', error);
+      res.status(500).json({ error: 'Failed to broadcast order' });
+    }
+  });
+
+  // Get vendor responses for an order
+  app.get("/api/orders/:id/vendor-responses", async (req, res) => {
+    try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { id: orderId } = req.params;
+      
+      // Get all broadcasts for this order with vendor info
+      const { data: broadcasts, error: broadcastError } = await supabase
+        .from('order_broadcasts')
+        .select(`
+          *,
+          vendor_profiles (
+            id,
+            business_name,
+            full_name,
+            city,
+            rating,
+            is_online
+          )
+        `)
+        .eq('order_id', orderId)
+        .order('broadcast_at', { ascending: false });
+        
+      if (broadcastError) {
+        console.error('Error fetching broadcasts:', broadcastError);
+        return res.status(500).json({ error: 'Failed to fetch vendor responses' });
+      }
+      
+      // Get vendor responses
+      const { data: responses, error: responsesError } = await supabase
+        .from('vendor_responses')
+        .select(`
+          *,
+          vendor_profiles (
+            id,
+            business_name,
+            full_name,
+            city,
+            rating
+          )
+        `)
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false });
+        
+      if (responsesError) {
+        console.error('Error fetching responses:', responsesError);
+        return res.status(500).json({ error: 'Failed to fetch vendor responses' });
+      }
+      
+      res.json({
+        broadcasts: broadcasts || [],
+        responses: responses || []
+      });
+      
+    } catch (error) {
+      console.error('Error fetching vendor responses:', error);
+      res.status(500).json({ error: 'Failed to fetch vendor responses' });
+    }
+  });
+
+  // Approve vendor price update request
+  app.post("/api/orders/:orderId/approve-price/:responseId", async (req, res) => {
+    try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { orderId, responseId } = req.params;
+      const { approved, adminResponse } = req.body;
+      
+      // Update the vendor response
+      const { error: responseError } = await supabase
+        .from('vendor_responses')
+        .update({
+          admin_approved: approved,
+          admin_response: adminResponse,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', responseId);
+        
+      if (responseError) {
+        console.error('Error updating response:', responseError);
+        return res.status(500).json({ error: 'Failed to update response' });
+      }
+      
+      // If approved, update order price and status
+      if (approved) {
+        const { data: response } = await supabase
+          .from('vendor_responses')
+          .select('proposed_price, vendor_id')
+          .eq('id', responseId)
+          .single();
+          
+        if (response) {
+          await supabase
+            .from('orders')
+            .update({
+              approx_price: response.proposed_price,
+              vendor_id: response.vendor_id,
+              status: 'Price Accepted'
+            })
+            .eq('id', orderId);
+        }
+      }
+      
+      res.json({ success: true });
+      
+    } catch (error) {
+      console.error('Error approving price update:', error);
+      res.status(500).json({ error: 'Failed to approve price update' });
+    }
+  });
+
   // Add order details endpoint using Supabase only
   app.post("/api/orders/:id/details", async (req, res) => {
     try {
