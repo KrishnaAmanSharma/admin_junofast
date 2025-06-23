@@ -90,12 +90,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     return serviceTypeMatch && statusMatch;
   });
 
-  // Debug logging
-  console.log('Order service type:', orderDetails?.order?.serviceType);
-  console.log('All vendors:', allVendors.length);
-  console.log('Filtered vendors:', vendors.length);
-  console.log('Vendor filter:', vendorFilter);
-  console.log('Vendors data:', vendors.map(v => ({ id: v.id, name: v.business_name, status: v.status })));
+
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
@@ -483,23 +478,17 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                           <SelectValue placeholder="Select vendor" />
                         </SelectTrigger>
                         <SelectContent>
-                          {vendors.length > 0 ? (
-                            vendors.map((vendor: any) => (
+                          {allVendors
+                            .filter((vendor: any) => vendor.status === 'approved')
+                            .map((vendor: any) => (
                               <SelectItem key={vendor.id} value={vendor.id}>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">{vendor.business_name}</span>
-                                  <span className="text-sm text-gray-500">
-                                    ({vendor.full_name}) - {vendor.city}
-                                  </span>
-                                  {vendor.is_online && (
-                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                  )}
-                                </div>
+                                {vendor.business_name} ({vendor.full_name}) - {vendor.city}
+                                {vendor.is_online && " 🟢"}
                               </SelectItem>
-                            ))
-                          ) : (
+                            ))}
+                          {allVendors.filter((vendor: any) => vendor.status === 'approved').length === 0 && (
                             <SelectItem value="no-vendors" disabled>
-                              {vendorsLoading ? "Loading vendors..." : "No vendors available"}
+                              {vendorsLoading ? "Loading vendors..." : "No approved vendors available"}
                             </SelectItem>
                           )}
                         </SelectContent>
