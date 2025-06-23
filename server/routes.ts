@@ -588,9 +588,31 @@ export async function registerRoutes(app: Express) {
         return res.status(500).json({ error: 'Failed to fetch vendor responses' });
       }
       
+      // Get dedicated price update requests for this order
+      const { data: priceRequests, error: priceRequestsError } = await supabase
+        .from('price_update_requests')
+        .select(`
+          *,
+          vendor_profiles (
+            id,
+            business_name,
+            full_name,
+            city,
+            phone_number,
+            rating
+          )
+        `)
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false });
+        
+      if (priceRequestsError) {
+        console.error('Error fetching price requests:', priceRequestsError);
+      }
+
       res.json({
         broadcasts: broadcasts || [],
-        responses: responses || []
+        responses: responses || [],
+        priceRequests: priceRequests || []
       });
       
     } catch (error) {
@@ -688,6 +710,138 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error('Error in approve price:', error);
       res.status(500).json({ error: 'Failed to process approval' });
+    }
+  });
+
+  // Create price update request endpoint
+  app.post("/api/orders/:orderId/price-requests", async (req, res) => {
+    try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { orderId } = req.params;
+      const { vendor_id, requested_price, reason } = req.body;
+      
+      if (!vendor_id || !requested_price || !reason) {
+        return res.status(400).json({ error: 'vendor_id, requested_price, and reason are required' });
+      }
+      
+      // Create price update request
+      const { data: priceRequest, error: requestError } = await supabase
+        .from('price_update_requests')
+        .insert({
+          order_id: orderId,
+          vendor_id,
+          requested_price,
+          reason,
+          status: 'pending'
+        })
+        .select(`
+          *,
+          vendor_profiles (
+            business_name,
+            full_name,
+            city
+          )
+        `)
+        .single();
+        
+      if (requestError) {
+        console.error('Error creating price request:', requestError);
+        return res.status(500).json({ error: 'Failed to create price request' });
+      }
+      
+      // Also create a vendor response for tracking
+      await supabase
+        .from('vendor_responses')
+        .insert({
+          order_id: orderId,
+          vendor_id,
+          response_type: 'price_update',
+          proposed_price: requested_price,
+          message: reason,
+          admin_approved: false
+        });
+      
+      res.json({ 
+        success: true, 
+        priceRequest,
+        message: 'Price update request submitted successfully'
+      });
+      
+    } catch (error) {
+      console.error('Error creating price request:', error);
+      res.status(500).json({ error: 'Failed to create price request' });
+    }
+  });
+
+  // Approve/reject price update request endpoint
+  app.post("/api/orders/:orderId/price-requests/:requestId/review", async (req, res) => {
+    try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { orderId, requestId } = req.params;
+      const { status, admin_response, update_order_price } = req.body;
+      
+      if (!status || !['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'status must be approved or rejected' });
+      }
+      
+      // Get the price request details
+      const { data: priceRequest, error: getError } = await supabase
+        .from('price_update_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+        
+      if (getError || !priceRequest) {
+        return res.status(404).json({ error: 'Price request not found' });
+      }
+      
+      // Update the price request
+      const { error: updateError } = await supabase
+        .from('price_update_requests')
+        .update({
+          status,
+          admin_response,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+        
+      if (updateError) {
+        console.error('Error updating price request:', updateError);
+        return res.status(500).json({ error: 'Failed to update price request' });
+      }
+      
+      // If approved and update_order_price is true, update the order
+      if (status === 'approved' && update_order_price) {
+        const { error: orderError } = await supabase
+          .from('orders')
+          .update({
+            approx_price: priceRequest.requested_price,
+            status: 'Price Updated'
+          })
+          .eq('id', orderId);
+          
+        if (orderError) {
+          console.error('Error updating order price:', orderError);
+        }
+      }
+      
+      res.json({ 
+        success: true,
+        status,
+        message: status === 'approved' ? 'Price request approved' : 'Price request rejected'
+      });
+      
+    } catch (error) {
+      console.error('Error reviewing price request:', error);
+      res.status(500).json({ error: 'Failed to review price request' });
     }
   });
 

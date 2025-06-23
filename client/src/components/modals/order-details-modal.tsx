@@ -329,6 +329,38 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
         variant: "destructive",
       });
     }
+  };
+
+  const handleApprovePriceRequest = async (requestId: string, status: string, requestedPrice?: number) => {
+    try {
+      const updates: any = {
+        status,
+        admin_response: status === 'approved' ? 'Price request approved by admin' : 'Price request rejected by admin'
+      };
+
+      // If approving, also update the order price
+      if (status === 'approved' && requestedPrice) {
+        updates.update_order_price = true;
+      }
+
+      await apiRequest("POST", `/api/orders/${orderId}/price-requests/${requestId}/review`, updates);
+      
+      // Invalidate and refetch data
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}/vendor-responses`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      
+      toast({
+        title: "Success",
+        description: status === 'approved' ? "Price request approved and order updated" : "Price request rejected",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process price request",
+        variant: "destructive",
+      });
+    }
   };;
 
   const currentStatus = orderDetails?.order?.status;
@@ -750,47 +782,59 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       </div>
                     )}
 
-                    {/* Price Update Requests */}
-                    {vendorResponses.responses?.some((r: any) => r.response_type === 'price_update') && (
+                    {/* Dedicated Price Update Requests */}
+                    {vendorResponses.priceRequests?.length > 0 && (
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-gray-700">Price Update Requests:</p>
                         <div className="grid gap-2">
-                          {vendorResponses.responses
-                            .filter((response: any) => response.response_type === 'price_update')
-                            .map((response: any) => (
-                            <div key={response.id} className="p-3 bg-blue-50 rounded border border-blue-200">
+                          {vendorResponses.priceRequests.map((request: any) => (
+                            <div key={request.id} className="p-3 bg-blue-50 rounded border border-blue-200">
                               <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium">{response.vendor_profiles?.business_name}</span>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  response.admin_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {response.admin_approved ? 'Price Approved' : 'Pending Review'}
-                                </span>
-                              </div>
-                              {response.proposed_price && (
-                                <div className="text-sm text-gray-600 mb-2">
-                                  Requested Price: ₹{response.proposed_price}
-                                  {response.original_price && (
-                                    <span className="ml-2 text-gray-400">(Original: ₹{response.original_price})</span>
-                                  )}
+                                <div>
+                                  <span className="font-medium">{request.vendor_profiles?.business_name}</span>
+                                  <span className="text-gray-500 ml-2">({request.vendor_profiles?.full_name})</span>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {request.vendor_profiles?.city} • {request.vendor_profiles?.phone_number}
+                                  </div>
                                 </div>
+                                <div className="text-right">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    request.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                                    request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {request.status === 'approved' ? 'Price Approved' :
+                                     request.status === 'rejected' ? 'Request Rejected' : 'Pending Review'}
+                                  </span>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {new Date(request.created_at).toLocaleDateString()}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-blue-700 mb-2 font-medium">
+                                Requested Price: ₹{request.requested_price}
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2 italic">
+                                Reason: "{request.reason}"
+                              </p>
+                              {request.admin_response && (
+                                <p className="text-xs text-gray-500 italic">
+                                  Admin: {request.admin_response}
+                                </p>
                               )}
-                              {response.message && (
-                                <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
-                              )}
-                              {!response.admin_approved && (
-                                <div className="flex gap-2">
+                              {request.status === 'pending' && (
+                                <div className="flex gap-2 mt-3">
                                   <Button 
                                     size="sm" 
                                     className="bg-blue-600 hover:bg-blue-700"
-                                    onClick={() => handleApprovePrice(response.id, true, response.proposed_price)}
+                                    onClick={() => handleApprovePriceRequest(request.id, 'approved', request.requested_price)}
                                   >
                                     Approve Price
                                   </Button>
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => handleApprovePrice(response.id, false)}
+                                    onClick={() => handleApprovePriceRequest(request.id, 'rejected')}
                                   >
                                     Reject
                                   </Button>
