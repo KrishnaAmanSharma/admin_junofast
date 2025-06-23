@@ -71,18 +71,31 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
   // Filter vendors client-side like in the vendors page
   const vendors = allVendors.filter((vendor: any) => {
-    // Filter by service type match
-    const serviceTypeMatch = !orderDetails?.order?.serviceType || 
-      vendor.service_types?.includes(orderDetails.order.serviceType);
-    
-    // Filter by vendor status
-    const statusMatch = vendorFilter === 'all' || vendor.status === vendorFilter;
-    
     // Only show approved vendors for order assignment
-    const isApproved = vendor.status === 'approved';
+    if (vendor.status !== 'approved') return false;
     
-    return serviceTypeMatch && statusMatch && isApproved;
+    // For now, show all approved vendors regardless of service type to ensure they appear
+    // TODO: Re-enable service type filtering once confirmed working
+    // const serviceTypeMatch = !orderDetails?.order?.serviceType || 
+    //   vendor.service_types?.includes(orderDetails.order.serviceType);
+    const serviceTypeMatch = true;
+    
+    // Filter by vendor filter selection
+    let statusMatch = true;
+    if (vendorFilter === 'online') {
+      statusMatch = vendor.is_online === true;
+    }
+    // 'all' and 'approved' both show approved vendors since we already filtered above
+    
+    return serviceTypeMatch && statusMatch;
   });
+
+  // Debug logging
+  console.log('Order service type:', orderDetails?.order?.serviceType);
+  console.log('All vendors:', allVendors.length);
+  console.log('Filtered vendors:', vendors.length);
+  console.log('Vendor filter:', vendorFilter);
+  console.log('Vendors data:', vendors.map(v => ({ id: v.id, name: v.business_name, status: v.status })));
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
@@ -470,30 +483,23 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                           <SelectValue placeholder="Select vendor" />
                         </SelectTrigger>
                         <SelectContent>
-                          {vendors.map((vendor: any) => (
-                            <SelectItem key={vendor.id} value={vendor.id}>
-                              <div className="flex items-center justify-between w-full">
-                                <div>
+                          {vendors.length > 0 ? (
+                            vendors.map((vendor: any) => (
+                              <SelectItem key={vendor.id} value={vendor.id}>
+                                <div className="flex items-center gap-2">
                                   <span className="font-medium">{vendor.business_name}</span>
-                                  <span className="text-sm text-gray-500 ml-2">
-                                    ({vendor.full_name})
+                                  <span className="text-sm text-gray-500">
+                                    ({vendor.full_name}) - {vendor.city}
                                   </span>
-                                </div>
-                                <div className="flex items-center gap-2 ml-4">
-                                  <span className="text-xs text-yellow-600">
-                                    ⭐ {vendor.rating?.toFixed(1) || 'N/A'}
-                                  </span>
-                                  <span className="text-xs text-gray-500">{vendor.city}</span>
                                   {vendor.is_online && (
                                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                                   )}
                                 </div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                          {vendors.length === 0 && !vendorsLoading && (
+                              </SelectItem>
+                            ))
+                          ) : (
                             <SelectItem value="no-vendors" disabled>
-                              No vendors available
+                              {vendorsLoading ? "Loading vendors..." : "No vendors available"}
                             </SelectItem>
                           )}
                         </SelectContent>
