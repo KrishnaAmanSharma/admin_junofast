@@ -599,7 +599,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Approve vendor price update request
+  // Approve vendor price update request or vendor acceptance
   app.post("/api/orders/:orderId/approve-price/:responseId", async (req, res) => {
     try {
       const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
@@ -608,7 +608,19 @@ export async function registerRoutes(app: Express) {
       const supabase = createClient(supabaseUrl, supabaseKey);
       
       const { orderId, responseId } = req.params;
-      const { approved, adminResponse } = req.body;
+      const { approved, adminResponse, updateOrderPrice } = req.body;
+      
+      // Get the vendor response details first
+      const { data: responseData, error: getResponseError } = await supabase
+        .from('vendor_responses')
+        .select('*')
+        .eq('id', responseId)
+        .single();
+        
+      if (getResponseError) {
+        console.error('Error fetching response:', getResponseError);
+        return res.status(500).json({ error: 'Failed to fetch response details' });
+      }
       
       // Update the vendor response
       const { error: responseError } = await supabase
@@ -625,31 +637,57 @@ export async function registerRoutes(app: Express) {
         return res.status(500).json({ error: 'Failed to update response' });
       }
       
-      // If approved, update order price and status
+      // If approved, handle different response types
       if (approved) {
-        const { data: response } = await supabase
-          .from('vendor_responses')
-          .select('proposed_price, vendor_id')
-          .eq('id', responseId)
-          .single();
+        let orderUpdates: any = {};
+        
+        // For vendor acceptances, update status to "Vendor Accepted" 
+        if (responseData.response_type === 'accept') {
+          orderUpdates.status = 'Vendor Accepted';
           
-        if (response) {
+          // Update broadcast status to accepted
           await supabase
-            .from('orders')
-            .update({
-              approx_price: response.proposed_price,
-              vendor_id: response.vendor_id,
-              status: 'Price Accepted'
+            .from('order_broadcasts')
+            .update({ 
+              status: 'accepted',
+              response_at: new Date().toISOString()
             })
+            .eq('order_id', orderId)
+            .eq('vendor_id', responseData.vendor_id);
+        }
+        
+        // For price updates, update the order price and status
+        if (responseData.response_type === 'price_update' || updateOrderPrice) {
+          if (responseData.proposed_price || updateOrderPrice) {
+            orderUpdates.approx_price = updateOrderPrice || responseData.proposed_price;
+            orderUpdates.status = 'Price Updated';
+          }
+        }
+        
+        // Update the order if there are changes
+        if (Object.keys(orderUpdates).length > 0) {
+          const { error: orderError } = await supabase
+            .from('orders')
+            .update(orderUpdates)
             .eq('id', orderId);
+            
+          if (orderError) {
+            console.error('Error updating order:', orderError);
+            return res.status(500).json({ error: 'Failed to update order' });
+          }
         }
       }
       
-      res.json({ success: true });
+      res.json({ 
+        success: true,
+        approved,
+        responseType: responseData.response_type,
+        message: approved ? 'Response approved successfully' : 'Response rejected'
+      });
       
     } catch (error) {
-      console.error('Error approving price update:', error);
-      res.status(500).json({ error: 'Failed to approve price update' });
+      console.error('Error in approve price:', error);
+      res.status(500).json({ error: 'Failed to process approval' });
     }
   });
 

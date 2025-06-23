@@ -238,12 +238,19 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     return Array.from(new Set(cities));
   };
 
-  const handleApprovePrice = async (responseId: string, approved: boolean) => {
+  const handleApprovePrice = async (responseId: string, approved: boolean, proposedPrice?: number) => {
     try {
-      await apiRequest("POST", `/api/orders/${orderId}/approve-price/${responseId}`, {
+      const updates: any = {
         approved,
         adminResponse: approved ? "Price approved by admin" : "Price rejected by admin"
-      });
+      };
+
+      // If price is approved, update the order price
+      if (approved && proposedPrice) {
+        updates.updateOrderPrice = proposedPrice;
+      }
+
+      await apiRequest("POST", `/api/orders/${orderId}/approve-price/${responseId}`, updates);
       
       // Refresh vendor responses
       queryClient.invalidateQueries({ queryKey: ["/api/orders", orderId, "vendor-responses"] });
@@ -251,7 +258,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       
       toast({
         title: approved ? "Price Approved" : "Price Rejected",
-        description: approved ? "Vendor price has been approved and order assigned" : "Vendor price request has been rejected",
+        description: approved ? "Vendor price has been approved and order updated" : "Vendor price request has been rejected",
       });
     } catch (error) {
       toast({
@@ -261,6 +268,68 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       });
     }
   };
+
+  const handleApproveVendor = async (responseId: string, vendorId: string, proposedPrice?: number) => {
+    try {
+      // First approve the vendor response
+      await apiRequest("POST", `/api/orders/${orderId}/approve-price/${responseId}`, {
+        approved: true,
+        adminResponse: "Vendor approved and assigned to order"
+      });
+
+      // Then update the order with vendor assignment and status
+      const orderUpdates: any = {
+        status: "Confirmed",
+        vendorId: vendorId
+      };
+
+      // Update price if proposed
+      if (proposedPrice) {
+        orderUpdates.approxPrice = proposedPrice;
+      }
+
+      await apiRequest("PUT", `/api/orders/${orderId}`, orderUpdates);
+      
+      // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}/vendor-responses`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      
+      toast({
+        title: "Success",
+        description: "Vendor approved and assigned to order",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve vendor",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectVendor = async (responseId: string) => {
+    try {
+      await apiRequest("POST", `/api/orders/${orderId}/approve-price/${responseId}`, {
+        approved: false,
+        adminResponse: "Vendor application rejected"
+      });
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}/vendor-responses`] });
+      
+      toast({
+        title: "Success",
+        description: "Vendor application rejected",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reject vendor",
+        variant: "destructive",
+      });
+    }
+  };;
 
   const currentStatus = orderDetails?.order?.status;
   const canEditPrice = currentStatus === "Pending" || currentStatus === "Price Updated";
@@ -621,40 +690,102 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       </div>
                     )}
 
+                    {/* Vendor Acceptances */}
+                    {vendorResponses.responses?.some((r: any) => r.response_type === 'accept') && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-700">Vendor Acceptances:</p>
+                        <div className="grid gap-2">
+                          {vendorResponses.responses
+                            .filter((response: any) => response.response_type === 'accept')
+                            .map((response: any) => (
+                            <div key={response.id} className="p-3 bg-green-50 rounded border border-green-200">
+                              <div className="flex items-center justify-between mb-2">
+                                <div>
+                                  <span className="font-medium">{response.vendor_profiles?.business_name}</span>
+                                  <span className="text-gray-500 ml-2">({response.vendor_profiles?.full_name})</span>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {response.vendor_profiles?.city} • {response.vendor_profiles?.phone_number}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    response.admin_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {response.admin_approved ? 'Confirmed' : 'Awaiting Approval'}
+                                  </span>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {new Date(response.created_at).toLocaleDateString()}
+                                  </div>
+                                </div>
+                              </div>
+                              {response.message && (
+                                <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
+                              )}
+                              {response.proposed_price && (
+                                <div className="text-sm text-green-700 mb-2 font-medium">
+                                  Quoted Price: ₹{response.proposed_price}
+                                </div>
+                              )}
+                              {!response.admin_approved && (
+                                <div className="flex gap-2 mt-3">
+                                  <Button 
+                                    size="sm" 
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={() => handleApproveVendor(response.id, response.vendor_id, response.proposed_price)}
+                                  >
+                                    Approve & Assign
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleRejectVendor(response.id)}
+                                  >
+                                    Reject
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Price Update Requests */}
-                    {vendorResponses.responses?.length > 0 && (
+                    {vendorResponses.responses?.some((r: any) => r.response_type === 'price_update') && (
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-gray-700">Price Update Requests:</p>
                         <div className="grid gap-2">
-                          {vendorResponses.responses.map((response: any) => (
-                            <div key={response.id} className="p-3 bg-white rounded border">
+                          {vendorResponses.responses
+                            .filter((response: any) => response.response_type === 'price_update')
+                            .map((response: any) => (
+                            <div key={response.id} className="p-3 bg-blue-50 rounded border border-blue-200">
                               <div className="flex items-center justify-between mb-2">
                                 <span className="font-medium">{response.vendor_profiles?.business_name}</span>
                                 <span className={`px-2 py-1 rounded-full text-xs ${
                                   response.admin_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                                 }`}>
-                                  {response.admin_approved ? 'Approved' : 'Pending Review'}
+                                  {response.admin_approved ? 'Price Approved' : 'Pending Review'}
                                 </span>
                               </div>
                               {response.proposed_price && (
                                 <div className="text-sm text-gray-600 mb-2">
-                                  Proposed Price: ₹{response.proposed_price}
+                                  Requested Price: ₹{response.proposed_price}
                                   {response.original_price && (
                                     <span className="ml-2 text-gray-400">(Original: ₹{response.original_price})</span>
                                   )}
                                 </div>
                               )}
                               {response.message && (
-                                <p className="text-sm text-gray-600 mb-2">{response.message}</p>
+                                <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
                               )}
                               {!response.admin_approved && (
                                 <div className="flex gap-2">
                                   <Button 
                                     size="sm" 
-                                    className="bg-green-600 hover:bg-green-700"
-                                    onClick={() => handleApprovePrice(response.id, true)}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                    onClick={() => handleApprovePrice(response.id, true, response.proposed_price)}
                                   >
-                                    Approve
+                                    Approve Price
                                   </Button>
                                   <Button 
                                     size="sm" 
