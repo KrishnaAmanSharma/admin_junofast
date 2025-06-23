@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'core/theme/app_theme.dart';
-import 'core/constants/app_constants.dart';
-import 'core/services/auth_service.dart';
-import 'features/auth/presentation/pages/login_page.dart';
-import 'features/dashboard/presentation/pages/dashboard_page.dart';
-import 'features/orders/presentation/controllers/orders_controller.dart';
-import 'features/profile/presentation/controllers/profile_controller.dart';
-import 'features/auth/presentation/controllers/auth_controller.dart';
+import 'configs/app_theme.dart';
+import 'configs/app_constants.dart';
+import 'services/auth_service.dart';
+import 'screens/login_page.dart';
+import 'screens/dashboard_page.dart';
+import 'services/profile_controller.dart';
+import 'services/orders_controller.dart';
+import 'services/earnings_controller.dart';
+import 'screens/available_orders_page.dart';
+import 'screens/my_orders_page.dart';
+import 'screens/earnings_page.dart';
+import 'screens/profile_page.dart';
+import 'screens/order_details_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,28 +52,26 @@ class VendorApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => ProfileController()),
+        ChangeNotifierProvider(create: (_) => OrdersController()),
+        ChangeNotifierProvider(create: (_) => EarningsController()),
       ],
-      child: GetMaterialApp(
+      child: MaterialApp(
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.light,
-        initialBinding: InitialBinding(),
         home: const AuthWrapper(),
-        getPages: AppConstants.routes,
+        routes: {
+          '/available-orders': (context) => const AvailableOrdersPage(),
+          '/my-orders': (context) => const MyOrdersPage(),
+          '/earnings': (context) => const EarningsPage(),
+          '/profile': (context) => const ProfilePage(),
+          '/order-details': (context) => const OrderDetailsPage(),
+        },
       ),
     );
-  }
-}
-
-class InitialBinding extends Bindings {
-  @override
-  void dependencies() {
-    Get.lazyPut<AuthService>(() => AuthService());
-    Get.lazyPut<AuthController>(() => AuthController());
-    Get.lazyPut<OrdersController>(() => OrdersController());
-    Get.lazyPut<ProfileController>(() => ProfileController());
   }
 }
 
@@ -87,7 +89,6 @@ class AuthWrapper extends StatelessWidget {
             ),
           );
         }
-        
         return authService.isAuthenticated 
             ? const DashboardPage() 
             : const LoginPage();
