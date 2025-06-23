@@ -63,26 +63,45 @@ export default function VendorsPage() {
     }
   });
 
-  // Approve/reject vendor mutation
+  // Approve vendor mutation
   const approveVendorMutation = useMutation({
-    mutationFn: async ({ vendorId, action, reason }: { vendorId: string; action: 'approve' | 'reject'; reason?: string }) => {
-      return apiRequest("POST", `/api/vendors/${vendorId}/status`, {
-        action,
-        reason
-      });
+    mutationFn: async (vendorId: string) => {
+      return apiRequest("POST", `/api/vendors/${vendorId}/approve`, {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
       toast({
         title: "Success",
-        description: "Vendor status updated successfully",
+        description: "Vendor approved successfully",
       });
       setSelectedVendor(null);
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to update vendor status",
+        description: "Failed to approve vendor",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Reject vendor mutation
+  const rejectVendorMutation = useMutation({
+    mutationFn: async (vendorId: string) => {
+      return apiRequest("POST", `/api/vendors/${vendorId}/reject`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
+      toast({
+        title: "Success",
+        description: "Vendor rejected successfully",
+      });
+      setSelectedVendor(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to reject vendor",
         variant: "destructive",
       });
     }
@@ -111,18 +130,11 @@ export default function VendorsPage() {
   };
 
   const handleApprove = (vendor: Vendor) => {
-    approveVendorMutation.mutate({
-      vendorId: vendor.id,
-      action: 'approve'
-    });
+    approveVendorMutation.mutate(vendor.id);
   };
 
   const handleReject = (vendor: Vendor) => {
-    approveVendorMutation.mutate({
-      vendorId: vendor.id,
-      action: 'reject',
-      reason: 'Application rejected by admin'
-    });
+    rejectVendorMutation.mutate(vendor.id);
   };
 
   if (isLoading) {
@@ -250,7 +262,7 @@ export default function VendorsPage() {
                             size="sm"
                             className="bg-green-600 hover:bg-green-700"
                             onClick={() => handleApprove(vendor)}
-                            disabled={approveVendorMutation.isPending}
+                            disabled={approveVendorMutation.isPending || rejectVendorMutation.isPending}
                           >
                             <Check className="h-4 w-4 mr-1" />
                             Approve
@@ -260,7 +272,7 @@ export default function VendorsPage() {
                             size="sm"
                             className="border-red-200 text-red-600 hover:bg-red-50"
                             onClick={() => handleReject(vendor)}
-                            disabled={approveVendorMutation.isPending}
+                            disabled={approveVendorMutation.isPending || rejectVendorMutation.isPending}
                           >
                             <X className="h-4 w-4 mr-1" />
                             Reject
@@ -375,7 +387,7 @@ export default function VendorsPage() {
                   <Button
                     className="bg-green-600 hover:bg-green-700 flex-1"
                     onClick={() => handleApprove(selectedVendor)}
-                    disabled={approveVendorMutation.isPending}
+                    disabled={approveVendorMutation.isPending || rejectVendorMutation.isPending}
                   >
                     <Check className="h-4 w-4 mr-2" />
                     Approve Vendor
@@ -384,7 +396,7 @@ export default function VendorsPage() {
                     variant="outline"
                     className="border-red-200 text-red-600 hover:bg-red-50 flex-1"
                     onClick={() => handleReject(selectedVendor)}
-                    disabled={approveVendorMutation.isPending}
+                    disabled={approveVendorMutation.isPending || rejectVendorMutation.isPending}
                   >
                     <X className="h-4 w-4 mr-2" />
                     Reject Application
