@@ -691,6 +691,80 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Vendor Management Routes
+  app.get("/api/vendors/admin", async (req, res) => {
+    try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const { data: vendors, error } = await supabase
+        .from('vendor_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching vendors:', error);
+        return res.status(500).json({ error: 'Failed to fetch vendors' });
+      }
+
+      res.json(vendors || []);
+    } catch (error) {
+      console.error('Error in vendor admin route:', error);
+      res.status(500).json({ error: 'Failed to fetch vendors' });
+    }
+  });
+
+  // Approve or reject vendor
+  app.post("/api/vendors/:vendorId/status", async (req, res) => {
+    try {
+      const supabaseUrl = "https://tdqqrjssnylfbjmpgaei.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkcXFyanNzbnlsZmJqbXBnYWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NDUzNjAsImV4cCI6MjA2NTMyMTM2MH0.d0zoAkDbbOA3neeaFRzeoLkeyV6vt-2JFeOlAnhSfIw";
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { vendorId } = req.params;
+      const { action, reason } = req.body;
+
+      if (!action || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ error: 'Valid action (approve/reject) is required' });
+      }
+
+      const updateData: any = {
+        status: action === 'approve' ? 'approved' : 'rejected',
+        updated_at: new Date().toISOString()
+      };
+
+      if (action === 'approve') {
+        updateData.approved_at = new Date().toISOString();
+      }
+
+      const { data: vendor, error } = await supabase
+        .from('vendor_profiles')
+        .update(updateData)
+        .eq('id', vendorId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating vendor status:', error);
+        return res.status(500).json({ error: 'Failed to update vendor status' });
+      }
+
+      console.log(`Vendor ${vendorId} ${action}d successfully`);
+      res.json({ 
+        success: true, 
+        vendor,
+        message: `Vendor ${action}d successfully` 
+      });
+
+    } catch (error) {
+      console.error('Error in vendor status update:', error);
+      res.status(500).json({ error: 'Failed to update vendor status' });
+    }
+  });
+
   // Users/Profiles Routes
   app.get("/api/profiles", async (req, res) => {
     try {

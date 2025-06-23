@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import Dashboard from "@/pages/dashboard";
 import Orders from "@/pages/orders";
 import Users from "@/pages/users";
+import Vendors from "@/pages/vendors";
 import ServiceTypes from "@/pages/service-types";
 import CommonItems from "@/pages/common-items";
 import ServiceQuestions from "@/pages/service-questions";
@@ -21,6 +22,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/orders" component={Orders} />
           <Route path="/users" component={Users} />
+          <Route path="/vendors" component={Vendors} />
           <Route path="/service-types" component={ServiceTypes} />
           <Route path="/common-items" component={CommonItems} />
           <Route path="/service-questions" component={ServiceQuestions} />
