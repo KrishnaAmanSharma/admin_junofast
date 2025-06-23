@@ -488,6 +488,25 @@ export async function registerRoutes(app: Express) {
       const { id: orderId } = req.params;
       const { vendorIds, criteria } = req.body;
       
+      // First, check if order has a valid price set
+      const { data: orderData, error: orderFetchError } = await supabase
+        .from('orders')
+        .select('approx_price')
+        .eq('id', orderId)
+        .single();
+        
+      if (orderFetchError) {
+        console.error('Error fetching order:', orderFetchError);
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      if (!orderData.approx_price || orderData.approx_price <= 0) {
+        return res.status(400).json({ 
+          error: 'Price validation failed',
+          message: 'Order must have a valid price set before broadcasting to vendors'
+        });
+      }
+      
       console.log(`Broadcasting order ${orderId} to ${vendorIds.length} vendors`);
       
       // Update order status to "Broadcasted"
