@@ -55,9 +55,9 @@ export default function VendorsPage() {
 
   // Fetch vendors
   const { data: vendors = [], isLoading } = useQuery({
-    queryKey: ["/api/vendors/admin"],
+    queryKey: ["/api/vendors"],
     queryFn: async () => {
-      const response = await fetch("/api/vendors/admin");
+      const response = await fetch("/api/vendors");
       if (!response.ok) throw new Error('Failed to fetch vendors');
       return response.json();
     }
@@ -72,7 +72,7 @@ export default function VendorsPage() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/vendors/admin"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
       toast({
         title: "Success",
         description: "Vendor status updated successfully",

@@ -732,8 +732,7 @@ export async function registerRoutes(app: Express) {
       }
 
       const updateData: any = {
-        status: action === 'approve' ? 'approved' : 'rejected',
-        updated_at: new Date().toISOString()
+        status: action === 'approve' ? 'approved' : 'rejected'
       };
 
       if (action === 'approve') {
