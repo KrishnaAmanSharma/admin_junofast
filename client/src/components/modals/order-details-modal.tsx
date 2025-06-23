@@ -178,17 +178,6 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   const handleAssignVendor = () => {
     if (!orderId) return;
     
-    // Check if order has a valid price set before broadcasting
-    const currentPrice = orderDetails?.order?.approxPrice;
-    if (!currentPrice || currentPrice <= 0) {
-      toast({
-        title: "Price Required",
-        description: "Please set a valid price for this order before assigning to vendors",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     if (assignmentType === "single") {
       if (!selectedVendor) return;
       assignVendorMutation.mutate({
@@ -461,16 +450,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                   </p>
                   <p>
                     <span className="font-medium">Current Price:</span>{" "}
-                    <span className={`font-semibold ${
-                      (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) 
-                        ? 'text-red-600' 
-                        : 'text-green-600'
-                    }`}>
-                      {(!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) 
-                        ? 'Not Set' 
-                        : formatCurrency(orderDetails?.order?.approxPrice)
-                      }
-                    </span>
+                    <span>{formatCurrency(orderDetails?.order?.approxPrice)}</span>
                   </p>
                   <p>
                     <span className="font-medium">User ID:</span>{" "}
@@ -504,23 +484,6 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
             <div className="space-y-6">
               <h4 className="font-semibold text-admin-slate mb-3">Order Management</h4>
               
-              {/* Price Validation Alert */}
-              {(!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">!</span>
-                    </div>
-                    <div>
-                      <h6 className="font-medium text-amber-800">Price Required</h6>
-                      <p className="text-sm text-amber-700">
-                        Please set a valid price for this order before assigning to vendors. Use the "Update Price" section below.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Vendor Assignment */}
               <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
@@ -601,19 +564,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       </Select>
                       <Button 
                         onClick={handleAssignVendor}
-                        disabled={
-                          assignVendorMutation.isPending || 
-                          !selectedVendor || 
-                          selectedVendor === "no-vendors" ||
-                          !orderDetails?.order?.approxPrice ||
-                          orderDetails?.order?.approxPrice <= 0
-                        }
+                        disabled={assignVendorMutation.isPending || !selectedVendor || selectedVendor === "no-vendors"}
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+                        className="bg-blue-600 hover:bg-blue-700"
                       >
-                        {assignVendorMutation.isPending ? "Sending..." : 
-                         (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
-                         "Send to Vendor"}
+                        {assignVendorMutation.isPending ? "Sending..." : "Send to Vendor"}
                       </Button>
                     </div>
                   </div>
@@ -690,18 +645,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       </div>
                       <Button 
                         onClick={handleAssignVendor}
-                        disabled={
-                          assignVendorMutation.isPending || 
-                          getFilteredVendorsForBroadcast().length === 0 ||
-                          !orderDetails?.order?.approxPrice ||
-                          orderDetails?.order?.approxPrice <= 0
-                        }
+                        disabled={assignVendorMutation.isPending || getFilteredVendorsForBroadcast().length === 0}
                         size="sm"
-                        className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400"
+                        className="bg-orange-600 hover:bg-orange-700"
                       >
-                        {assignVendorMutation.isPending ? "Broadcasting..." : 
-                         (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
-                         "Broadcast Order"}
+                        {assignVendorMutation.isPending ? "Broadcasting..." : "Broadcast Order"}
                       </Button>
                     </div>
                   </div>
