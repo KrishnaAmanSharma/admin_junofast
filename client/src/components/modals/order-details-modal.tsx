@@ -178,6 +178,17 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   const handleAssignVendor = () => {
     if (!orderId) return;
     
+    // Check if order has a valid price set before broadcasting
+    const currentPrice = orderDetails?.order?.approxPrice;
+    if (!currentPrice || currentPrice <= 0) {
+      toast({
+        title: "Price Required",
+        description: "Please set a valid price for this order before assigning to vendors",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (assignmentType === "single") {
       if (!selectedVendor) return;
       assignVendorMutation.mutate({
@@ -329,38 +340,6 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
         variant: "destructive",
       });
     }
-  };
-
-  const handleApprovePriceRequest = async (requestId: string, status: string, requestedPrice?: number) => {
-    try {
-      const updates: any = {
-        status,
-        admin_response: status === 'approved' ? 'Price request approved by admin' : 'Price request rejected by admin'
-      };
-
-      // If approving, also update the order price
-      if (status === 'approved' && requestedPrice) {
-        updates.update_order_price = true;
-      }
-
-      await apiRequest("POST", `/api/orders/${orderId}/price-requests/${requestId}/review`, updates);
-      
-      // Invalidate and refetch data
-      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}/vendor-responses`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      
-      toast({
-        title: "Success",
-        description: status === 'approved' ? "Price request approved and order updated" : "Price request rejected",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to process price request",
-        variant: "destructive",
-      });
-    }
   };;
 
   const currentStatus = orderDetails?.order?.status;
@@ -482,7 +461,16 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                   </p>
                   <p>
                     <span className="font-medium">Current Price:</span>{" "}
-                    <span>{formatCurrency(orderDetails?.order?.approxPrice)}</span>
+                    <span className={`font-semibold ${
+                      (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) 
+                        ? 'text-red-600' 
+                        : 'text-green-600'
+                    }`}>
+                      {(!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) 
+                        ? 'Not Set' 
+                        : formatCurrency(orderDetails?.order?.approxPrice)
+                      }
+                    </span>
                   </p>
                   <p>
                     <span className="font-medium">User ID:</span>{" "}
@@ -516,6 +504,23 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
             <div className="space-y-6">
               <h4 className="font-semibold text-admin-slate mb-3">Order Management</h4>
               
+              {/* Price Validation Alert */}
+              {(!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">!</span>
+                    </div>
+                    <div>
+                      <h6 className="font-medium text-amber-800">Price Required</h6>
+                      <p className="text-sm text-amber-700">
+                        Please set a valid price for this order before assigning to vendors. Use the "Update Price" section below.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Vendor Assignment */}
               <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
@@ -596,11 +601,19 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       </Select>
                       <Button 
                         onClick={handleAssignVendor}
-                        disabled={assignVendorMutation.isPending || !selectedVendor || selectedVendor === "no-vendors"}
+                        disabled={
+                          assignVendorMutation.isPending || 
+                          !selectedVendor || 
+                          selectedVendor === "no-vendors" ||
+                          !orderDetails?.order?.approxPrice ||
+                          orderDetails?.order?.approxPrice <= 0
+                        }
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
                       >
-                        {assignVendorMutation.isPending ? "Sending..." : "Send to Vendor"}
+                        {assignVendorMutation.isPending ? "Sending..." : 
+                         (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
+                         "Send to Vendor"}
                       </Button>
                     </div>
                   </div>
@@ -677,11 +690,18 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       </div>
                       <Button 
                         onClick={handleAssignVendor}
-                        disabled={assignVendorMutation.isPending || getFilteredVendorsForBroadcast().length === 0}
+                        disabled={
+                          assignVendorMutation.isPending || 
+                          getFilteredVendorsForBroadcast().length === 0 ||
+                          !orderDetails?.order?.approxPrice ||
+                          orderDetails?.order?.approxPrice <= 0
+                        }
                         size="sm"
-                        className="bg-orange-600 hover:bg-orange-700"
+                        className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400"
                       >
-                        {assignVendorMutation.isPending ? "Broadcasting..." : "Broadcast Order"}
+                        {assignVendorMutation.isPending ? "Broadcasting..." : 
+                         (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
+                         "Broadcast Order"}
                       </Button>
                     </div>
                   </div>
@@ -782,59 +802,47 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       </div>
                     )}
 
-                    {/* Dedicated Price Update Requests */}
-                    {vendorResponses.priceRequests?.length > 0 && (
+                    {/* Price Update Requests */}
+                    {vendorResponses.responses?.some((r: any) => r.response_type === 'price_update') && (
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-gray-700">Price Update Requests:</p>
                         <div className="grid gap-2">
-                          {vendorResponses.priceRequests.map((request: any) => (
-                            <div key={request.id} className="p-3 bg-blue-50 rounded border border-blue-200">
+                          {vendorResponses.responses
+                            .filter((response: any) => response.response_type === 'price_update')
+                            .map((response: any) => (
+                            <div key={response.id} className="p-3 bg-blue-50 rounded border border-blue-200">
                               <div className="flex items-center justify-between mb-2">
-                                <div>
-                                  <span className="font-medium">{request.vendor_profiles?.business_name}</span>
-                                  <span className="text-gray-500 ml-2">({request.vendor_profiles?.full_name})</span>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {request.vendor_profiles?.city} • {request.vendor_profiles?.phone_number}
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    request.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                                    request.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                    'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    {request.status === 'approved' ? 'Price Approved' :
-                                     request.status === 'rejected' ? 'Request Rejected' : 'Pending Review'}
-                                  </span>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {new Date(request.created_at).toLocaleDateString()}
-                                  </div>
-                                </div>
+                                <span className="font-medium">{response.vendor_profiles?.business_name}</span>
+                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                  response.admin_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {response.admin_approved ? 'Price Approved' : 'Pending Review'}
+                                </span>
                               </div>
-                              <div className="text-sm text-blue-700 mb-2 font-medium">
-                                Requested Price: ₹{request.requested_price}
-                              </div>
-                              <p className="text-sm text-gray-600 mb-2 italic">
-                                Reason: "{request.reason}"
-                              </p>
-                              {request.admin_response && (
-                                <p className="text-xs text-gray-500 italic">
-                                  Admin: {request.admin_response}
-                                </p>
+                              {response.proposed_price && (
+                                <div className="text-sm text-gray-600 mb-2">
+                                  Requested Price: ₹{response.proposed_price}
+                                  {response.original_price && (
+                                    <span className="ml-2 text-gray-400">(Original: ₹{response.original_price})</span>
+                                  )}
+                                </div>
                               )}
-                              {request.status === 'pending' && (
-                                <div className="flex gap-2 mt-3">
+                              {response.message && (
+                                <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
+                              )}
+                              {!response.admin_approved && (
+                                <div className="flex gap-2">
                                   <Button 
                                     size="sm" 
                                     className="bg-blue-600 hover:bg-blue-700"
-                                    onClick={() => handleApprovePriceRequest(request.id, 'approved', request.requested_price)}
+                                    onClick={() => handleApprovePrice(response.id, true, response.proposed_price)}
                                   >
                                     Approve Price
                                   </Button>
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => handleApprovePriceRequest(request.id, 'rejected')}
+                                    onClick={() => handleApprovePrice(response.id, false)}
                                   >
                                     Reject
                                   </Button>
