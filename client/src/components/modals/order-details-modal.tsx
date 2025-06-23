@@ -59,27 +59,29 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     }
   });
 
-  const { data: vendors = [], isLoading: vendorsLoading } = useQuery({
-    queryKey: ["/api/vendors", orderDetails?.order?.serviceType, orderDetails?.order?.pickupAddress, vendorFilter],
-    enabled: isOpen && !!orderDetails?.order,
+  const { data: allVendors = [], isLoading: vendorsLoading } = useQuery({
+    queryKey: ["/api/vendors"],
+    enabled: isOpen,
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (orderDetails?.order?.serviceType) {
-        params.append('serviceType', orderDetails.order.serviceType);
-      }
-      // Extract city from pickup address if available
-      const city = extractCityFromAddress(orderDetails?.order?.pickupAddress);
-      if (city) {
-        params.append('city', city);
-      }
-      if (vendorFilter !== 'all') {
-        params.append('status', vendorFilter);
-      }
-      
-      const response = await fetch(`/api/vendors?${params.toString()}`);
+      const response = await fetch("/api/vendors");
       if (!response.ok) throw new Error('Failed to fetch vendors');
       return response.json();
     }
+  });
+
+  // Filter vendors client-side like in the vendors page
+  const vendors = allVendors.filter((vendor: any) => {
+    // Filter by service type match
+    const serviceTypeMatch = !orderDetails?.order?.serviceType || 
+      vendor.service_types?.includes(orderDetails.order.serviceType);
+    
+    // Filter by vendor status
+    const statusMatch = vendorFilter === 'all' || vendor.status === vendorFilter;
+    
+    // Only show approved vendors for order assignment
+    const isApproved = vendor.status === 'approved';
+    
+    return serviceTypeMatch && statusMatch && isApproved;
   });
 
   const updateOrderMutation = useMutation({
@@ -221,7 +223,10 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   };
 
   const getUniqueCities = (): string[] => {
-    const cities = vendors.map((vendor: any) => vendor.city).filter(Boolean) as string[];
+    const cities = allVendors
+      .filter((vendor: any) => vendor.status === 'approved')
+      .map((vendor: any) => vendor.city)
+      .filter(Boolean) as string[];
     return Array.from(new Set(cities));
   };
 
