@@ -855,19 +855,13 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 )}
                         </div>
                       )}
-                      </>
-                    );
-                  }
-                  
-                  return null;
+                    </div>
+                  )
                 })()}
 
               {/* Vendor Responses Section - Only show for non-final stage orders */}
-              {(() => {
-                const currentStatus = orderDetails?.order?.status;
-                const isFinalStage = ['Confirmed', 'In Progress', 'Completed'].includes(currentStatus);
-                
-                return !isFinalStage && vendorResponses && (vendorResponses.broadcasts?.length > 0 || vendorResponses.responses?.length > 0) && (
+              {!['Confirmed', 'In Progress', 'Completed'].includes(orderDetails?.order?.status) && 
+               vendorResponses && (vendorResponses.broadcasts?.length > 0 || vendorResponses.responses?.length > 0) && (
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
                     <h6 className="font-medium text-admin-slate mb-3">Vendor Responses</h6>
                     
@@ -1013,8 +1007,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       </div>
                     )}
                   </div>
-                );
-              })()}
+                ))}
 
               {/* Order Management Section */}
               <div className="space-y-6">
