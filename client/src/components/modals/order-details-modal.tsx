@@ -346,6 +346,9 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
   const currentStatus = orderDetails?.order?.status;
   const canEditPrice = currentStatus === "Pending" || currentStatus === "Price Updated";
+  const isOrderConfirmed = currentStatus === "Confirmed" && orderDetails?.order?.vendorId;
+  const canBroadcast = !isOrderConfirmed;
+  const canApproveResponses = !isOrderConfirmed;
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
@@ -604,6 +607,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       <Button 
                         onClick={handleAssignVendor}
                         disabled={
+                          !canBroadcast ||
                           assignVendorMutation.isPending || 
                           !selectedVendor || 
                           selectedVendor === "no-vendors" ||
@@ -613,7 +617,8 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
                       >
-                        {assignVendorMutation.isPending ? "Sending..." : 
+                        {!canBroadcast ? "Order Assigned" :
+                         assignVendorMutation.isPending ? "Sending..." : 
                          (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
                          "Send to Vendor"}
                       </Button>
@@ -693,6 +698,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       <Button 
                         onClick={handleAssignVendor}
                         disabled={
+                          !canBroadcast ||
                           assignVendorMutation.isPending || 
                           getFilteredVendorsForBroadcast().length === 0 ||
                           !orderDetails?.order?.approxPrice ||
@@ -701,7 +707,8 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                         size="sm"
                         className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400"
                       >
-                        {assignVendorMutation.isPending ? "Broadcasting..." : 
+                        {!canBroadcast ? "Order Assigned" :
+                         assignVendorMutation.isPending ? "Broadcasting..." : 
                          (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
                          "Broadcast Order"}
                       </Button>
@@ -780,7 +787,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                                   Quoted Price: ₹{response.proposed_price}
                                 </div>
                               )}
-                              {!response.admin_approved && (
+                              {!response.admin_approved && canApproveResponses && (
                                 <div className="flex gap-2 mt-3">
                                   <Button 
                                     size="sm" 
@@ -796,6 +803,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                                   >
                                     Reject
                                   </Button>
+                                </div>
+                              )}
+                              {!response.admin_approved && !canApproveResponses && (
+                                <div className="text-sm text-gray-500 mt-3 italic">
+                                  Order already assigned to vendor
                                 </div>
                               )}
                             </div>
@@ -832,7 +844,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                               {response.message && (
                                 <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
                               )}
-                              {!response.admin_approved && (
+                              {!response.admin_approved && canApproveResponses && (
                                 <div className="flex gap-2">
                                   <Button 
                                     size="sm" 
@@ -848,6 +860,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                                   >
                                     Reject
                                   </Button>
+                                </div>
+                              )}
+                              {!response.admin_approved && !canApproveResponses && (
+                                <div className="text-sm text-gray-500 mt-3 italic">
+                                  Order already assigned to vendor
                                 </div>
                               )}
                             </div>
