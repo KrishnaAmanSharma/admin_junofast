@@ -424,6 +424,25 @@ export async function registerRoutes(app: Express) {
         dbUpdateData['notes'] = updateData.notes;
       }
       if (updateData.vendorId !== undefined) {
+        // Check if order already has a vendor assigned before allowing vendor update
+        const { data: existingOrder, error: fetchError } = await supabase
+          .from('orders')
+          .select('vendor_id')
+          .eq('id', id)
+          .single();
+          
+        if (fetchError) {
+          console.error('Error fetching existing order:', fetchError);
+          return res.status(500).json({ error: 'Failed to fetch order details' });
+        }
+        
+        if (existingOrder.vendor_id && existingOrder.vendor_id !== updateData.vendorId) {
+          return res.status(400).json({ 
+            error: 'Order already has a vendor assigned',
+            message: 'Cannot assign another vendor to this order'
+          });
+        }
+        
         dbUpdateData['vendor_id'] = updateData.vendorId;
       }
       
@@ -658,6 +677,26 @@ export async function registerRoutes(app: Express) {
       
       // If approved, handle different response types
       if (approved) {
+        // First, check if order already has a vendor assigned
+        const { data: orderData, error: orderFetchError } = await supabase
+          .from('orders')
+          .select('vendor_id, status')
+          .eq('id', orderId)
+          .single();
+          
+        if (orderFetchError) {
+          console.error('Error fetching order:', orderFetchError);
+          return res.status(500).json({ error: 'Failed to fetch order details' });
+        }
+        
+        // Prevent assignment if vendor is already assigned
+        if (orderData.vendor_id && (responseData.response_type === 'accept' || responseData.response_type === 'price_update')) {
+          return res.status(400).json({ 
+            error: 'Order already has a vendor assigned',
+            message: 'Cannot assign another vendor to this order'
+          });
+        }
+        
         let orderUpdates: any = {};
         
         // For vendor acceptances, assign vendor to order

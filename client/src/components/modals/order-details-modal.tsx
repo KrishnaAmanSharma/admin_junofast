@@ -139,10 +139,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       });
       setSelectedVendor("");
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.response?.data?.error || (assignmentType === "single" ? "Failed to assign vendor" : "Failed to broadcast order");
       toast({
         title: "Error",
-        description: assignmentType === "single" ? "Failed to assign vendor" : "Failed to broadcast order",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -271,10 +272,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
         title: approved ? "Price Approved" : "Price Rejected",
         description: approved ? "Vendor price has been approved and order updated" : "Vendor price request has been rejected",
       });
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.response?.data?.error || "Failed to process price approval";
       toast({
         title: "Error",
-        description: "Failed to process price approval",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -311,10 +313,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
         title: "Success",
         description: "Vendor approved and assigned to order",
       });
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.response?.data?.error || "Failed to approve vendor";
       toast({
         title: "Error",
-        description: "Failed to approve vendor",
+        description: errorMessage,
         variant: "destructive",
       });
     }
