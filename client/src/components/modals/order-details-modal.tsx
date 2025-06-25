@@ -154,7 +154,6 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     
     const updates: any = {
       approxPrice: newPrice,
-      status: "Price Updated",
     };
     
     updateOrderMutation.mutate({
