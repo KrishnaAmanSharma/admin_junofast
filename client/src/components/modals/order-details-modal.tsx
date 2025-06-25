@@ -232,25 +232,25 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 <div className="flex justify-between">
                   <span className="font-medium">Status:</span>
                   <span className={`px-2 py-1 rounded-full text-xs ${
-                    orderDetails.order.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                    orderDetails.order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                    orderDetails.order.status === 'Confirmed' ? 'bg-yellow-100 text-yellow-800' :
+                    orderDetails?.order?.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                    orderDetails?.order?.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                    orderDetails?.order?.status === 'Confirmed' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {orderDetails.order.status}
+                    {orderDetails?.order?.status || 'Unknown'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Service Type:</span>
-                  <span>{orderDetails.order.serviceType}</span>
+                  <span>{orderDetails?.order?.serviceType || 'Unknown'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Approximate Price:</span>
-                  <span>₹{orderDetails.order.approxPrice || 'Not set'}</span>
+                  <span>₹{orderDetails?.order?.approxPrice || 'Not set'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Created:</span>
-                  <span>{new Date(orderDetails.order.createdAt).toLocaleDateString()}</span>
+                  <span>{orderDetails?.order?.createdAt ? new Date(orderDetails.order.createdAt).toLocaleDateString() : 'Unknown'}</span>
                 </div>
               </div>
             </div>
@@ -285,25 +285,25 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
               <h4 className="font-semibold text-admin-slate">Vendor Assignment</h4>
               
               {/* Check if vendor is already assigned */}
-              {orderDetails.order.assignedVendor ? (
+              {orderDetails?.order?.assignedVendor ? (
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <h5 className="font-medium text-green-800 mb-2">Assigned Vendor</h5>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="font-medium">Business:</span>
-                      <span>{orderDetails.order.assignedVendor.business_name}</span>
+                      <span>{orderDetails?.order?.assignedVendor?.business_name || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Contact:</span>
-                      <span>{orderDetails.order.assignedVendor.full_name}</span>
+                      <span>{orderDetails?.order?.assignedVendor?.full_name || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Phone:</span>
-                      <span>{orderDetails.order.assignedVendor.phone_number}</span>
+                      <span>{orderDetails?.order?.assignedVendor?.phone_number || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">City:</span>
-                      <span>{orderDetails.order.assignedVendor.city}</span>
+                      <span>{orderDetails?.order?.assignedVendor?.city || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -455,18 +455,18 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
           )}
 
           {/* Vendor Responses Section - Only show for non-final stage orders */}
-          {!isFinalStage && vendorResponses && (vendorResponses.broadcasts?.length > 0 || vendorResponses.responses?.length > 0) && (
+          {!isFinalStage && vendorResponses && (vendorResponses?.broadcasts?.length > 0 || vendorResponses?.responses?.length > 0) && (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
               <h6 className="font-medium text-admin-slate mb-3">Vendor Responses</h6>
               
               {/* Vendor Acceptances */}
-              {vendorResponses.responses?.some((r: any) => r.response_type === 'accept') && (
+              {vendorResponses?.responses?.some((r: any) => r.response_type === 'accept') && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-700">Vendor Acceptances:</p>
                   <div className="grid gap-2">
-                    {vendorResponses.responses
-                      .filter((response: any) => response.response_type === 'accept')
-                      .map((response: any) => (
+                    {vendorResponses?.responses
+                      ?.filter((response: any) => response.response_type === 'accept')
+                      ?.map((response: any) => (
                       <div key={response.id} className="p-3 bg-green-50 rounded border border-green-200">
                         <div className="flex items-center justify-between mb-2">
                           <div>
