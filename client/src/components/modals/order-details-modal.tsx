@@ -108,24 +108,10 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       setSelectedVendor("");
       onClose();
     },
-    onError: (error: any) => {
-      const errorData = error?.response?.data;
-      let title = "Error";
-      let description = "Failed to update order";
-      
-      if (errorData?.error === 'Invalid Status Change') {
-        title = "Invalid Status Change";
-        description = errorData.message;
-      } else if (errorData?.error === 'Order Complete') {
-        title = "Order Complete";
-        description = errorData.message;
-      } else if (errorData?.message) {
-        description = errorData.message;
-      }
-      
+    onError: () => {
       toast({
-        title,
-        description,
+        title: "Error",
+        description: "Failed to update order",
         variant: "destructive",
       });
     },
