@@ -660,9 +660,10 @@ export async function registerRoutes(app: Express) {
       if (approved) {
         let orderUpdates: any = {};
         
-        // For vendor acceptances, update status to "Vendor Accepted" 
+        // For vendor acceptances, assign vendor to order
         if (responseData.response_type === 'accept') {
-          orderUpdates.status = 'Vendor Accepted';
+          orderUpdates.status = 'Confirmed';
+          orderUpdates.vendor_id = responseData.vendor_id;
           
           // Update broadcast status to accepted
           await supabase
@@ -675,11 +676,22 @@ export async function registerRoutes(app: Express) {
             .eq('vendor_id', responseData.vendor_id);
         }
         
-        // For price updates, update the order price and status
+        // For price updates, assign vendor to order AND update price
         if (responseData.response_type === 'price_update' || updateOrderPrice) {
           if (responseData.proposed_price || updateOrderPrice) {
             orderUpdates.approx_price = updateOrderPrice || responseData.proposed_price;
-            orderUpdates.status = 'Price Updated';
+            orderUpdates.status = 'Confirmed';
+            orderUpdates.vendor_id = responseData.vendor_id; // Assign vendor when approving price update
+            
+            // Update broadcast status to accepted for price updates too
+            await supabase
+              .from('order_broadcasts')
+              .update({ 
+                status: 'accepted',
+                response_at: new Date().toISOString()
+              })
+              .eq('order_id', orderId)
+              .eq('vendor_id', responseData.vendor_id);
           }
         }
         
