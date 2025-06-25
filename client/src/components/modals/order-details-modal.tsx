@@ -190,7 +190,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   const uniqueCities = vendors ? [...new Set(vendors.map((v: any) => v.city).filter(Boolean))] : [];
 
   // Check if order is in final stage
-  const isFinalStage = ['Confirmed', 'In Progress', 'Completed'].includes(orderDetails?.order?.status);
+  const isFinalStage = orderDetails?.order?.status && ['Confirmed', 'In Progress', 'Completed'].includes(orderDetails.order.status);
 
   if (orderLoading) {
     return (
@@ -220,7 +220,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Order Details - {orderDetails.order.id}</DialogTitle>
+          <DialogTitle>Order Details - {orderDetails?.order?.id || 'Loading...'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
