@@ -899,13 +899,9 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       <SelectValue placeholder="Select new status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="Confirmed">Confirmed</SelectItem>
                       <SelectItem value="In Progress">In Progress</SelectItem>
                       <SelectItem value="Completed">Completed</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      <SelectItem value="Price Updated">Price Updated</SelectItem>
-                      <SelectItem value="Price Accepted">Price Accepted</SelectItem>
+                      <SelectItem value="Canceled">Canceled</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button 
