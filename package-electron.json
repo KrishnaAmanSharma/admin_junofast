@@ -1,0 +1,55 @@
+{
+  "name": "juno-fast-desktop",
+  "version": "1.0.0",
+  "description": "Juno Fast Admin Dashboard - Desktop Application",
+  "main": "electron-main.js",
+  "homepage": "./",
+  "scripts": {
+    "electron": "electron .",
+    "electron-dev": "NODE_ENV=development electron .",
+    "build-electron": "npm run build && electron-builder",
+    "dist": "npm run build && electron-builder --publish=never",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.junofast.admin",
+    "productName": "Juno Fast Admin",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron-main.js",
+      "server/**/*",
+      "dist/**/*",
+      "shared/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png"
+    }
+  },
+  "devDependencies": {
+    "electron": "^22.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "dependencies": {
+    "electron-updater": "^5.3.0"
+  }
+}
