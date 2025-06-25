@@ -967,7 +967,9 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       <SelectValue placeholder="Select new status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
+                      {orderDetails?.order?.vendorId && (
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                      )}
                       <SelectItem value="Completed">Completed</SelectItem>
                       <SelectItem value="Canceled">Canceled</SelectItem>
                     </SelectContent>
