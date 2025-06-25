@@ -437,6 +437,7 @@ export async function registerRoutes(app: Express) {
         }
         
         if (existingOrder.vendor_id && existingOrder.vendor_id !== updateData.vendorId) {
+          console.log(`Preventing vendor change: Order already has vendor ${existingOrder.vendor_id}, trying to assign ${updateData.vendorId}`);
           return res.status(400).json({ 
             error: 'Order already has a vendor assigned',
             message: 'Cannot assign another vendor to this order'
@@ -689,8 +690,12 @@ export async function registerRoutes(app: Express) {
           return res.status(500).json({ error: 'Failed to fetch order details' });
         }
         
-        // Prevent assignment if vendor is already assigned
-        if (orderData.vendor_id && (responseData.response_type === 'accept' || responseData.response_type === 'price_update')) {
+        console.log(`Order ${orderId} current vendor: ${orderData.vendor_id}, status: ${orderData.status}`);
+        console.log(`Response type: ${responseData.response_type}, vendor: ${responseData.vendor_id}`);
+        
+        // Prevent assignment if vendor is already assigned and it's a different vendor
+        if (orderData.vendor_id && orderData.vendor_id !== responseData.vendor_id && (responseData.response_type === 'accept' || responseData.response_type === 'price_update')) {
+          console.log(`Preventing vendor assignment: Order already has vendor ${orderData.vendor_id}, trying to assign ${responseData.vendor_id}`);
           return res.status(400).json({ 
             error: 'Order already has a vendor assigned',
             message: 'Cannot assign another vendor to this order'
