@@ -851,7 +851,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                                     className="bg-blue-600 hover:bg-blue-700"
                                     onClick={() => handleApprovePrice(response.id, true, response.proposed_price)}
                                   >
-                                    Approve Price
+                                    Approve and Assign
                                   </Button>
                                   <Button 
                                     size="sm" 
