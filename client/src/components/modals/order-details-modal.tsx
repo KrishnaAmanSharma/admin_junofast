@@ -524,30 +524,37 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 </div>
               )}
 
-              {/* Assigned Vendor Details - Show when vendor is assigned */}
-              {orderDetails?.order?.vendorId ? (
-                <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center justify-between">
-                    <h5 className="font-medium text-admin-slate">Assigned Vendor</h5>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      Confirmed
-                    </Badge>
-                  </div>
-                  
-                  {/* Find and display assigned vendor details */}
-                  {(() => {
+              {/* Vendor Assignment and Response Section - Hide for final stage orders */}
+              {(() => {
+                const currentStatus = orderDetails?.order?.status;
+                const isFinalStage = ['Confirmed', 'In Progress', 'Completed'].includes(currentStatus);
+                
+                // Don't show vendor management interface for final stage orders
+                if (isFinalStage) {
+                  // Only show assigned vendor details for final stage orders
+                  if (orderDetails?.order?.vendorId) {
                     const assignedVendor = allVendors.find((vendor: any) => vendor.id === orderDetails.order.vendorId);
+                    
                     if (!assignedVendor) {
                       return (
-                        <div className="text-sm text-gray-600">
-                          Vendor details not available
+                        <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-sm text-gray-600">
+                            Vendor details not available
+                          </div>
                         </div>
                       );
                     }
                     
                     return (
-                      <div className="bg-white p-4 rounded-lg border">
-                        <div className="flex items-start justify-between">
+                      <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-medium text-admin-slate">Assigned Vendor</h5>
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            {currentStatus}
+                          </Badge>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-lg border">
                           <div className="space-y-2">
                             <div>
                               <h6 className="font-semibold text-lg">{assignedVendor.business_name}</h6>
@@ -597,14 +604,93 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                         </div>
                       </div>
                     );
-                  })()}
-                </div>
-              ) : (
-                // Vendor Assignment Interface - Show when no vendor assigned
-                <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <h5 className="font-medium text-admin-slate">Vendor Assignment</h5>
-                  </div>
+                  }
+                  
+                  // Return null for final stage orders without vendors (shouldn't happen)
+                  return null;
+                }
+                
+                // For orders not in final stages - show full vendor management interface
+                return (
+                  <>
+                    {/* Assigned Vendor Details - Show when vendor is assigned but not final stage */}
+                    {orderDetails?.order?.vendorId ? (
+                      <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-medium text-admin-slate">Assigned Vendor</h5>
+                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                            {currentStatus}
+                          </Badge>
+                        </div>
+                        
+                        {(() => {
+                          const assignedVendor = allVendors.find((vendor: any) => vendor.id === orderDetails.order.vendorId);
+                          if (!assignedVendor) {
+                            return (
+                              <div className="text-sm text-gray-600">
+                                Vendor details not available
+                              </div>
+                            );
+                          }
+                          
+                          return (
+                            <div className="bg-white p-4 rounded-lg border">
+                              <div className="space-y-2">
+                                <div>
+                                  <h6 className="font-semibold text-lg">{assignedVendor.business_name}</h6>
+                                  <p className="text-gray-600">{assignedVendor.full_name}</p>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="font-medium text-gray-700">Phone:</span>
+                                    <p className="text-gray-600">{assignedVendor.phone_number}</p>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium text-gray-700">Email:</span>
+                                    <p className="text-gray-600">{assignedVendor.email}</p>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium text-gray-700">City:</span>
+                                    <p className="text-gray-600">{assignedVendor.city}</p>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium text-gray-700">Rating:</span>
+                                    <p className="text-gray-600">{assignedVendor.rating || 0}/5 ⭐</p>
+                                  </div>
+                                </div>
+                                
+                                {assignedVendor.address && (
+                                  <div className="text-sm">
+                                    <span className="font-medium text-gray-700">Address:</span>
+                                    <p className="text-gray-600">{assignedVendor.address}</p>
+                                  </div>
+                                )}
+                                
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="font-medium text-gray-700">Status:</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                      assignedVendor.is_online ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                                    }`}>
+                                      {assignedVendor.is_online ? 'Online' : 'Offline'}
+                                    </span>
+                                    <span className="text-gray-500">
+                                      Total Orders: {assignedVendor.total_orders || 0}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      // Vendor Assignment Interface - Show when no vendor assigned
+                      <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-medium text-admin-slate">Vendor Assignment</h5>
+                        </div>
 
                 {/* Assignment Type Selection */}
                 <div className="space-y-3">
@@ -780,11 +866,22 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                     </div>
                   </div>
                 )}
+                  </div>
                 </div>
               )}
+            </>
+          );
+        }
+        
+        return null;
+      })()}
 
-              {/* Vendor Responses Section - Only show when no vendor is assigned */}
-              {!orderDetails?.order?.vendorId && vendorResponses && (vendorResponses.broadcasts?.length > 0 || vendorResponses.responses?.length > 0) && (
+              {/* Vendor Responses Section - Only show for non-final stage orders */}
+              {(() => {
+                const currentStatus = orderDetails?.order?.status;
+                const isFinalStage = ['Confirmed', 'In Progress', 'Completed'].includes(currentStatus);
+                
+                return !isFinalStage && vendorResponses && (vendorResponses.broadcasts?.length > 0 || vendorResponses.responses?.length > 0) && (
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
                     <h6 className="font-medium text-admin-slate mb-3">Vendor Responses</h6>
                     
