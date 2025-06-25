@@ -128,6 +128,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 25, 2025**: Firebase Hosting deployment configured
+  - Set up Firebase hosting for project ID: junofast-ebd0a
+  - Created deployment scripts and configuration files
+  - Frontend will be served from Firebase CDN while backend stays on Replit
+  - Live URL: https://junofast-ebd0a.web.app (after deployment)
+  - Completely free hosting solution with global CDN and HTTPS
+
 - **June 25, 2025**: Complete Windows EXE solution implemented
   - Created Electron wrapper for desktop application
   - Built automated build scripts and comprehensive documentation
