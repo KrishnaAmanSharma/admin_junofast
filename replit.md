@@ -126,6 +126,15 @@ Juno Fast is a comprehensive relocation services platform that connects customer
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **June 25, 2025**: Fixed order status progression flow
+  - Status progression: Pending → Broadcasted → Confirmed → Price Accepted → In Progress → Completed/Canceled
+  - Implemented backward status prevention (orders can only move forward)
+  - Fixed duplicate broadcast error by checking existing broadcasts
+  - Added conditions to disable broadcasting/approval features for confirmed orders with assigned vendors
+  - Enhanced vendor acceptance approval to properly update order status to "Confirmed"
+
 ## Changelog
 
 Changelog:

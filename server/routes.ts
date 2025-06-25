@@ -406,6 +406,34 @@ export async function registerRoutes(app: Express) {
       
       console.log('Updating order:', id, 'with data:', updateData);
       
+      // Define the valid status progression
+      const statusProgression = ['Pending', 'Broadcasted', 'Confirmed', 'Price Accepted', 'In Progress', 'Completed', 'Canceled'];
+      
+      // Get current order status if updating status
+      if (updateData.status !== undefined) {
+        const { data: currentOrder, error: fetchError } = await supabase
+          .from('orders')
+          .select('status')
+          .eq('id', id)
+          .single();
+          
+        if (fetchError) {
+          console.error('Error fetching current order:', fetchError);
+          return res.status(500).json({ error: 'Failed to fetch current order' });
+        }
+        
+        const currentIndex = statusProgression.indexOf(currentOrder.status);
+        const newIndex = statusProgression.indexOf(updateData.status);
+        
+        // Prevent backward status progression (except from Pending to any status or to Canceled)
+        if (currentIndex > newIndex && updateData.status !== 'Canceled' && currentOrder.status !== 'Pending') {
+          return res.status(400).json({ 
+            error: 'Invalid status progression',
+            message: `Cannot change status from ${currentOrder.status} to ${updateData.status}. Status can only move forward.`
+          });
+        }
+      }
+      
       // Map frontend field names to database field names
       const dbUpdateData: Record<string, any> = {};
       if (updateData.approxPrice !== undefined) {
@@ -540,30 +568,47 @@ export async function registerRoutes(app: Express) {
         return res.status(500).json({ error: 'Failed to update order status' });
       }
       
-      // Create broadcast records for each vendor
-      const broadcastRecords = vendorIds.map((vendorId: string) => ({
-        order_id: orderId,
-        vendor_id: vendorId,
-        broadcast_at: new Date().toISOString(),
-        status: 'pending',
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
-      }));
-      
-      const { data: broadcasts, error: broadcastError } = await supabase
+      // Check for existing broadcasts and create only new ones
+      const { data: existingBroadcasts } = await supabase
         .from('order_broadcasts')
-        .insert(broadcastRecords)
-        .select();
+        .select('vendor_id')
+        .eq('order_id', orderId);
+      
+      const existingVendorIds = new Set(existingBroadcasts?.map(b => b.vendor_id) || []);
+      const newVendorIds = vendorIds.filter((vendorId: string) => !existingVendorIds.has(vendorId));
+      
+      let broadcasts = existingBroadcasts || [];
+      
+      if (newVendorIds.length > 0) {
+        // Create broadcast records only for new vendors
+        const broadcastRecords = newVendorIds.map((vendorId: string) => ({
+          order_id: orderId,
+          vendor_id: vendorId,
+          broadcast_at: new Date().toISOString(),
+          status: 'pending',
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+        }));
         
-      if (broadcastError) {
-        console.error('Error creating broadcasts:', broadcastError);
-        return res.status(500).json({ error: 'Failed to broadcast to vendors' });
+        const { data: newBroadcasts, error: broadcastError } = await supabase
+          .from('order_broadcasts')
+          .insert(broadcastRecords)
+          .select();
+          
+        if (broadcastError) {
+          console.error('Error creating broadcasts:', broadcastError);
+          return res.status(500).json({ error: 'Failed to broadcast to vendors' });
+        }
+        
+        broadcasts = [...broadcasts, ...(newBroadcasts || [])];
       }
       
-      console.log(`Successfully broadcasted order to ${broadcasts?.length || 0} vendors`);
+      console.log(`Successfully broadcasted order to ${vendorIds.length} vendors (${newVendorIds.length} new, ${existingVendorIds.size} existing)`);
       
       res.json({ 
         success: true, 
-        broadcastCount: broadcasts?.length || 0,
+        broadcastCount: vendorIds.length,
+        newBroadcasts: newVendorIds.length,
+        existingBroadcasts: existingVendorIds.size,
         orderId,
         criteria 
       });
