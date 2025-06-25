@@ -347,8 +347,8 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   const currentStatus = orderDetails?.order?.status;
   const canEditPrice = currentStatus === "Pending" || currentStatus === "Price Updated";
   const isOrderConfirmed = currentStatus === "Confirmed" && orderDetails?.order?.vendorId;
-  const canBroadcast = !isOrderConfirmed;
-  const canApproveResponses = !isOrderConfirmed;
+  const canBroadcast = !isOrderConfirmed && !orderDetails?.order?.vendorId;
+  const canApproveResponses = !isOrderConfirmed && !orderDetails?.order?.vendorId;
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
