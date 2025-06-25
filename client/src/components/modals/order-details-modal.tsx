@@ -876,16 +876,84 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 )}
 
                 {/* Current Assignment Info */}
-                {orderDetails?.order?.vendorId && (
-                  <div className="mt-3 p-3 bg-white rounded border">
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Currently assigned to:</span> Vendor ID {orderDetails.order.vendorId}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Status: {orderDetails.order.status}
-                    </p>
-                  </div>
-                )}
+                {orderDetails?.order?.vendorId && (() => {
+                  const assignedVendor = allVendors.find((vendor: any) => vendor.id === orderDetails.order.vendorId);
+                  return (
+                    <div className="mt-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h6 className="font-medium text-green-800 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+                        Assigned Vendor
+                      </h6>
+                      {assignedVendor ? (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-sm">
+                                <span className="font-medium text-gray-700">Business:</span>{" "}
+                                <span className="text-gray-900">{assignedVendor.business_name}</span>
+                              </p>
+                              <p className="text-sm">
+                                <span className="font-medium text-gray-700">Contact:</span>{" "}
+                                <span className="text-gray-900">{assignedVendor.full_name}</span>
+                              </p>
+                              <p className="text-sm">
+                                <span className="font-medium text-gray-700">Phone:</span>{" "}
+                                <span className="text-gray-900">{assignedVendor.phone_number}</span>
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm">
+                                <span className="font-medium text-gray-700">Email:</span>{" "}
+                                <span className="text-gray-900">{assignedVendor.email}</span>
+                              </p>
+                              <p className="text-sm">
+                                <span className="font-medium text-gray-700">City:</span>{" "}
+                                <span className="text-gray-900">{assignedVendor.city}</span>
+                              </p>
+                              <p className="text-sm">
+                                <span className="font-medium text-gray-700">Status:</span>{" "}
+                                <span className={`inline-flex items-center gap-1 ${assignedVendor.is_online ? 'text-green-600' : 'text-gray-500'}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${assignedVendor.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                                  {assignedVendor.is_online ? 'Online' : 'Offline'}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {assignedVendor.status === 'approved' && (
+                            <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-green-200">
+                              <div className="text-center p-2 bg-white rounded border">
+                                <div className="font-semibold text-green-700">{assignedVendor.completed_orders || 0}</div>
+                                <div className="text-xs text-gray-600">Completed Orders</div>
+                              </div>
+                              <div className="text-center p-2 bg-white rounded border">
+                                <div className="font-semibold text-green-700">
+                                  {assignedVendor.rating > 0 ? `${assignedVendor.rating}/5` : 'New'}
+                                </div>
+                                <div className="text-xs text-gray-600">Rating</div>
+                              </div>
+                              <div className="text-center p-2 bg-white rounded border">
+                                <div className="font-semibold text-green-700">
+                                  {assignedVendor.last_active_at ? new Date(assignedVendor.last_active_at).toLocaleDateString() : 'Never'}
+                                </div>
+                                <div className="text-xs text-gray-600">Last Active</div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="text-xs text-gray-500 mt-2">
+                            Order Status: <span className="font-medium">{orderDetails.order.status}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-600">
+                          <p><span className="font-medium">Vendor ID:</span> {orderDetails.order.vendorId}</p>
+                          <p className="text-xs text-gray-500 mt-1">Vendor details not available</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               
               {/* Status Update */}
