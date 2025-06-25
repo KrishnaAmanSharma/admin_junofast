@@ -933,13 +933,13 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 )}
 
               </div>
-            </div>
-              
-            {/* Status Update */}
-            <div className="space-y-6">
-              <h4 className="font-semibold text-admin-slate mb-3">Order Management</h4>
-              
-              <div className="max-w-md">
+
+              {/* Order Management Section */}
+              <div className="space-y-6">
+                <h4 className="font-semibold text-admin-slate mb-3">Order Management</h4>
+                
+                {/* Status Update */}
+                <div className="max-w-md">
                 <Label htmlFor="newStatus" className="text-sm font-medium text-gray-700">
                   Update Status
                 </Label>
