@@ -188,6 +188,7 @@ export async function registerRoutes(app: Express) {
           createdAt: order.created_at,
           updatedAt: order.updated_at,
           userId: order.user_id,
+          vendorId: order.vendor_id,
           profile: profile ? {
             id: profile.id,
             email: profile.email,
@@ -305,6 +306,7 @@ export async function registerRoutes(app: Express) {
       const mappedOrder = {
         id: orderData.id,
         userId: orderData.user_id,
+        vendorId: orderData.vendor_id,
         serviceType: orderData.service_type,
         status: orderData.status,
         pickupAddress: orderData.pickup_address,
