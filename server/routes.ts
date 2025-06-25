@@ -706,6 +706,7 @@ export async function registerRoutes(app: Express) {
         
         // For vendor acceptances, assign vendor to order
         if (responseData.response_type === 'accept') {
+          console.log(`Setting order ${orderId} status to Confirmed for vendor acceptance`);
           orderUpdates.status = 'Confirmed';
           orderUpdates.vendor_id = responseData.vendor_id;
           
@@ -741,15 +742,19 @@ export async function registerRoutes(app: Express) {
         
         // Update the order if there are changes
         if (Object.keys(orderUpdates).length > 0) {
-          const { error: orderError } = await supabase
+          console.log(`Updating order ${orderId} with:`, orderUpdates);
+          const { data: updatedOrder, error: orderError } = await supabase
             .from('orders')
             .update(orderUpdates)
-            .eq('id', orderId);
+            .eq('id', orderId)
+            .select()
+            .single();
             
           if (orderError) {
             console.error('Error updating order:', orderError);
             return res.status(500).json({ error: 'Failed to update order' });
           }
+          console.log(`Order ${orderId} updated successfully. New status:`, updatedOrder?.status);
         }
       }
       
