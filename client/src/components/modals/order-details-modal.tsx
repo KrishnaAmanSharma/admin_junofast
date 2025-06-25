@@ -630,6 +630,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                          "Send to Vendor"}
                       </Button>
                     </div>
+                    {!canBroadcast && (
+                      <div className="text-xs text-gray-500 italic mt-2">
+                        Cannot send to vendor - Order is already assigned
+                      </div>
+                    )}
                   </div>
                 ) : (
                   // Broadcast Assignment
@@ -720,6 +725,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                          "Broadcast Order"}
                       </Button>
                     </div>
+                    {!canBroadcast && (
+                      <div className="text-xs text-gray-500 italic mt-2">
+                        Cannot broadcast order - Order is already assigned to a vendor
+                      </div>
+                    )}
                   </div>
                 )}
 
