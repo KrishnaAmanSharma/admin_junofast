@@ -427,10 +427,24 @@ export async function registerRoutes(app: Express) {
         
         // Prevent backward status progression (except from Pending to any status or to Canceled)
         if (currentIndex > newIndex && updateData.status !== 'Canceled' && currentOrder.status !== 'Pending') {
-          return res.status(400).json({ 
-            error: 'Invalid status progression',
-            message: `Cannot change status from ${currentOrder.status} to ${updateData.status}. Status can only move forward.`
-          });
+          const validNextStatuses = statusProgression.slice(currentIndex + 1);
+          if (validNextStatuses.length > 0) {
+            return res.status(400).json({ 
+              error: 'Invalid Status Change',
+              message: `Cannot change status from "${currentOrder.status}" to "${updateData.status}". Valid next statuses are: ${validNextStatuses.join(', ')}, or Canceled.`,
+              currentStatus: currentOrder.status,
+              requestedStatus: updateData.status,
+              validNextStatuses: [...validNextStatuses, 'Canceled']
+            });
+          } else {
+            return res.status(400).json({ 
+              error: 'Order Complete',
+              message: `Order is already at final status "${currentOrder.status}". Only cancellation is allowed.`,
+              currentStatus: currentOrder.status,
+              requestedStatus: updateData.status,
+              validNextStatuses: ['Canceled']
+            });
+          }
         }
       }
       
