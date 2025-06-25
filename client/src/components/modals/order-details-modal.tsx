@@ -540,6 +540,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 {/* Assignment Type Selection */}
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">Assignment Type</Label>
+                  {!canBroadcast && (
+                    <div className="text-sm text-gray-500 italic bg-gray-50 p-2 rounded border">
+                      ℹ️ Vendor assignment is locked - Order is already confirmed and assigned to a vendor
+                    </div>
+                  )}
                   <div className="flex gap-4">
                     <label className="flex items-center space-x-2">
                       <input
@@ -547,9 +552,10 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                         value="single"
                         checked={assignmentType === "single"}
                         onChange={(e) => setAssignmentType(e.target.value)}
+                        disabled={!canBroadcast}
                         className="text-blue-600"
                       />
-                      <span className="text-sm">Single Vendor Assignment</span>
+                      <span className={`text-sm ${!canBroadcast ? 'text-gray-400' : ''}`}>Single Vendor Assignment</span>
                     </label>
                     <label className="flex items-center space-x-2">
                       <input
@@ -557,9 +563,10 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                         value="broadcast"
                         checked={assignmentType === "broadcast"}
                         onChange={(e) => setAssignmentType(e.target.value)}
+                        disabled={!canBroadcast}
                         className="text-blue-600"
                       />
-                      <span className="text-sm">Broadcast to Multiple Vendors</span>
+                      <span className={`text-sm ${!canBroadcast ? 'text-gray-400' : ''}`}>Broadcast to Multiple Vendors</span>
                     </label>
                   </div>
                 </div>
@@ -720,6 +727,11 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 {vendorResponses && (vendorResponses.broadcasts?.length > 0 || vendorResponses.responses?.length > 0) && (
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
                     <h6 className="font-medium text-admin-slate mb-3">Vendor Responses</h6>
+                    {!canApproveResponses && (
+                      <div className="text-sm text-gray-500 italic bg-yellow-50 p-2 rounded border border-yellow-200 mb-3">
+                        ℹ️ Response approvals are locked - Order is already confirmed and assigned to a vendor
+                      </div>
+                    )}
                     
                     {/* Broadcasts Status */}
                     {vendorResponses.broadcasts?.length > 0 && (
