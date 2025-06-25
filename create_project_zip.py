@@ -54,7 +54,13 @@ def create_project_zip():
         '*-backup.ts',
         '*-broken*.ts',
         '__pycache__',
-        '*.pyc'
+        '*.pyc',
+        '.cache',
+        '.pythonlibs',
+        '.uv',
+        'pyproject.toml',
+        'uv.lock',
+        '*.sql'
     ]
     
     # Get current directory (project root)
