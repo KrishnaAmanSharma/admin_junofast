@@ -662,5 +662,16 @@ export const supabaseStorage = {
       questionAnswers: mappedQuestionAnswers,
       orderDetails: mappedOrderDetails
     };
+  },
+
+  async getVendors() {
+    const { data, error } = await supabase
+      .from('vendor_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
   }
 };
+
+export const getVendors = supabaseStorage.getVendors;

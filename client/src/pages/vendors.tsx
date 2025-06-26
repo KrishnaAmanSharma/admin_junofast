@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { getVendors } from "@/lib/supabase-client";
 import { 
   Eye, 
   Check, 
@@ -54,13 +55,9 @@ export default function VendorsPage() {
   const queryClient = useQueryClient();
 
   // Fetch vendors
-  const { data: vendors = [], isLoading } = useQuery({
-    queryKey: ["/api/vendors"],
-    queryFn: async () => {
-      const response = await fetch("/api/vendors");
-      if (!response.ok) throw new Error('Failed to fetch vendors');
-      return response.json();
-    }
+  const { data: vendors = [], isLoading } = useQuery<Vendor[]>({
+    queryKey: ["supabase-vendors"],
+    queryFn: getVendors,
   });
 
   // Approve vendor mutation
