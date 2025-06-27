@@ -16,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, HelpCircle } from "lucide-react";
 import type { CommonItem, ServiceType } from "@shared/schema";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function CommonItems() {
   const [selectedItem, setSelectedItem] = useState<CommonItem | null>(null);
@@ -27,6 +28,7 @@ export default function CommonItems() {
     search: "",
   });
   const { toast } = useToast();
+  const [selectedInfo, setSelectedInfo] = useState(false);
 
   const { data: serviceTypes } = useQuery<ServiceType[]>({
     queryKey: ["/api/service-types"],
@@ -85,7 +87,12 @@ export default function CommonItems() {
       
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold text-admin-slate">Common Items</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-semibold text-admin-slate">Common Items</h2>
+            <Button variant="ghost" size="icon" className="p-0 h-5 w-5 text-gray-400 hover:text-blue-600" onClick={() => setSelectedInfo(true)}>
+              <HelpCircle className="w-4 h-4" />
+            </Button>
+          </div>
           <Button onClick={handleAdd} className="bg-primary-custom hover:bg-blue-700">
             <Plus className="w-4 h-4 mr-2" />
             Add Item
@@ -230,6 +237,68 @@ export default function CommonItems() {
           setSelectedItem(null);
         }}
       />
+
+      {/* Info Dialog */}
+      <Dialog open={selectedInfo} onOpenChange={() => setSelectedInfo(false)}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Common Items - Complete Guide</DialogTitle>
+            <DialogDescription>
+              <b>What are Common Items?</b><br/>
+              Common items are frequently used or standard items associated with a service type (e.g., boxes, furniture, appliances for relocation). They help you quickly build orders, quotes, or checklists by selecting from a predefined list.<br/><br/>
+              <b>Why use Common Items?</b><br/>
+              - Save time by reusing standard items<br/>
+              - Ensure consistency in orders and inventory<br/>
+              - Make it easier for users to select or add items<br/><br/>
+              <b>When to use Common Items?</b><br/>
+              - When creating or editing orders that involve physical goods or repeatable services<br/>
+              - When you want to standardize item names, images, and descriptions<br/>
+              - When you want to provide a quick-pick list for users or staff<br/><br/>
+              <b>How to create and manage Common Items:</b>
+              <ul className="list-disc ml-6">
+                <li>Click "Add Item" to create a new common item for a service type</li>
+                <li>Fill in the name, description, and (optionally) an image URL</li>
+                <li>Assign the item to a service type for better organization</li>
+                <li>Set the item as active or inactive as needed</li>
+                <li>Edit or delete items as your offerings change</li>
+              </ul>
+              <br/>
+              <b>Logic for Fields:</b>
+              <ul className="list-disc ml-6">
+                <li><b>Name:</b> The display name of the item (e.g., "Large Box")</li>
+                <li><b>Description:</b> Short details about the item (e.g., "Double-walled, 24x18x18 inches")</li>
+                <li><b>Image URL:</b> Optional image to help users recognize the item. If not provided, a default image is shown.</li>
+                <li><b>Service Type:</b> The category or service this item belongs to (e.g., "House Relocation")</li>
+                <li><b>Status:</b> Active items are available for selection; inactive items are hidden</li>
+              </ul>
+              <br/>
+              <b>Best Practices:</b>
+              <ul className="list-disc ml-6">
+                <li>Use clear, descriptive names and images</li>
+                <li>Keep descriptions concise but informative</li>
+                <li>Regularly review and update your item list</li>
+                <li>Deactivate (rather than delete) items you no longer use</li>
+                <li>Group items by service type for easier selection</li>
+              </ul>
+              <br/>
+              <b>Example Scenarios:</b>
+              <ul className="list-disc ml-6">
+                <li>For a moving company: "Large Box", "Wardrobe Box", "Sofa", "Refrigerator"</li>
+                <li>For a cleaning service: "Vacuum Cleaner", "Mop", "Cleaning Solution"</li>
+                <li>For an event planner: "Round Table", "Folding Chair", "Stage Light"</li>
+              </ul>
+              <br/>
+              <b>Advanced Tips:</b><br/>
+              - Use images to help users quickly identify items<br/>
+              - Use the search and filter options to find items fast<br/>
+              - Keep your list focused on the most commonly used items for efficiency<br/>
+              <br/>
+              <b>Why keep it updated?</b><br/>
+              Your business, services, and inventory change over time. Regularly review and improve your common items to keep your workflow efficient and your data high quality.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -16,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, HelpCircle } from "lucide-react";
 import type { ServiceQuestion, ServiceType } from "@shared/schema";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function ServiceQuestions() {
   const [selectedQuestion, setSelectedQuestion] = useState<ServiceQuestion | null>(null);
@@ -27,6 +28,7 @@ export default function ServiceQuestions() {
     questionType: "all",
   });
   const { toast } = useToast();
+  const [selectedInfo, setSelectedInfo] = useState(false);
 
   const { data: serviceTypes } = useQuery<ServiceType[]>({
     queryKey: ["/api/service-types"],
@@ -106,7 +108,12 @@ export default function ServiceQuestions() {
       
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold text-admin-slate">Service Questions</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-semibold text-admin-slate">Service Questions</h2>
+            <Button variant="ghost" size="icon" className="p-0 h-5 w-5 text-gray-400 hover:text-blue-600" onClick={() => setSelectedInfo(true)}>
+              <HelpCircle className="w-4 h-4" />
+            </Button>
+          </div>
           <Button onClick={handleAdd} className="bg-primary-custom hover:bg-blue-700">
             <Plus className="w-4 h-4 mr-2" />
             Add Question
@@ -283,6 +290,70 @@ export default function ServiceQuestions() {
           setSelectedQuestion(null);
         }}
       />
+
+      {/* Info Dialog */}
+      <Dialog open={selectedInfo} onOpenChange={() => setSelectedInfo(false)}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Service Questions - Complete Guide</DialogTitle>
+            <DialogDescription>
+              <b>What are Service Questions?</b><br/>
+              Service questions are customizable questions you ask users or vendors as part of your service workflow. They help you collect all the information needed to process an order, configure a service, or understand customer needs.<br/><br/>
+              <b>Why use Service Questions?</b><br/>
+              - Ensure you have all the details to deliver the right service<br/>
+              - Standardize data collection for reporting and automation<br/>
+              - Guide users through complex processes step by step<br/><br/>
+              <b>When to use Service Questions?</b><br/>
+              - When onboarding new customers or vendors<br/>
+              - When a service requires specific details (e.g., move date, item list, preferences)<br/>
+              - When you want to automate or validate order intake<br/><br/>
+              <b>How to create and manage Service Questions:</b>
+              <ul className="list-disc ml-6">
+                <li>Click "Add Question" to create a new question for a service type</li>
+                <li>Choose the question type (text, number, date, boolean, dropdown, add items, sub questions)</li>
+                <li>Set if the question is required or optional</li>
+                <li>Use display order to control the sequence</li>
+                <li>Edit or delete questions as your process evolves</li>
+              </ul>
+              <br/>
+              <b>Logic for Question Types:</b>
+              <ul className="list-disc ml-6">
+                <li><b>Text:</b> Freeform answer (e.g., address, comments)</li>
+                <li><b>Number:</b> Numeric input (e.g., quantity, age)</li>
+                <li><b>Date:</b> Date picker (e.g., move date)</li>
+                <li><b>Boolean:</b> Yes/No or True/False (e.g., is urgent?)</li>
+                <li><b>Dropdown:</b> Select from predefined options</li>
+                <li><b>Add Items:</b> Lets user add multiple items (e.g., inventory list)</li>
+                <li><b>Sub Questions:</b> Conditional follow-up questions based on previous answers</li>
+              </ul>
+              <br/>
+              <b>Best Practices:</b>
+              <ul className="list-disc ml-6">
+                <li>Keep questions clear and concise</li>
+                <li>Use required only for truly essential info</li>
+                <li>Group related questions for better UX</li>
+                <li>Test your questions with real users</li>
+                <li>Review and update questions as your business evolves</li>
+              </ul>
+              <br/>
+              <b>Example Scenarios:</b>
+              <ul className="list-disc ml-6">
+                <li>For a house move: "What is your move date?" (date), "How many boxes?" (number), "Do you need packing help?" (boolean)</li>
+                <li>For a cleaning service: "What type of cleaning?" (dropdown), "Any pets at home?" (boolean)</li>
+                <li>For a custom order: Use sub questions to ask for more details only if needed</li>
+              </ul>
+              <br/>
+              <b>Advanced Logic:</b><br/>
+              - Use sub questions to create dynamic, conditional flows<br/>
+              - Use display order to control the sequence of questions<br/>
+              - Use dropdowns for standardized answers and easier reporting<br/>
+              <br/>
+              <b>Why keep it updated?</b><br/>
+              Your business, services, and customer needs change. Regularly review and improve your service questions to keep your workflow efficient and your data high quality.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

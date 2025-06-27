@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, HelpCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabaseStorage, getVendors } from "@/lib/supabase-client";
 import { supabase } from "@/lib/supabase-client";
@@ -31,6 +31,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     maxVendors: 10
   });
   const { toast } = useToast();
+  const [showInfo, setShowInfo] = useState(false);
 
   const { data: orderDetails, isLoading } = useQuery({
     queryKey: ["supabase-order-details", orderId],
@@ -134,31 +135,23 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       // Both single and broadcast now use direct Supabase calls
       const vendorIdArray = Array.isArray(vendorIds) ? vendorIds : [vendorIds];
       const now = new Date().toISOString();
-      if (assignmentType === "single") {
-        // Assign vendor to order and update status
-        await supabaseStorage.updateOrder(orderId, {
-          vendorId: vendorIdArray[0],
-          status: "Confirmed"
-        });
-        // Optionally, you can also insert into order_broadcasts if needed
-      } else {
-        // Broadcast: insert multiple records into order_broadcasts
-        const broadcastRecords = vendorIdArray.map((vendorId) => ({
-          order_id: orderId,
-          vendor_id: vendorId,
-          broadcast_at: now,
-          status: "pending",
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          created_at: now
-        }));
-        // Insert all broadcasts
-        const { error } = await supabase
-          .from('order_broadcasts')
-          .insert(broadcastRecords);
-        if (error) throw error;
-        // Optionally, update order status to Broadcasted
-        await supabaseStorage.updateOrder(orderId, { status: "Broadcasted" });
-      }
+      // Treat single vendor the same as broadcast: only broadcast, do not assign
+      // Insert broadcast record(s)
+      const broadcastRecords = vendorIdArray.map((vendorId) => ({
+        order_id: orderId,
+        vendor_id: vendorId,
+        broadcast_at: now,
+        status: "pending",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        created_at: now
+      }));
+      // Insert all broadcasts
+      const { error } = await supabase
+        .from('order_broadcasts')
+        .insert(broadcastRecords);
+      if (error) throw error;
+      // Update order status to Broadcasted
+      await supabaseStorage.updateOrder(orderId, { status: "Broadcasted" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supabase-order-details"] });
@@ -464,9 +457,14 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex justify-between items-center">
-            <DialogTitle className="text-xl font-semibold text-admin-slate">
-              Order Details - #{orderId}
-            </DialogTitle>
+            <div className="flex items-center gap-2">
+              <DialogTitle className="text-xl font-semibold text-admin-slate">
+                Order Details - #{orderId}
+              </DialogTitle>
+              <Button variant="ghost" size="icon" className="p-0 h-5 w-5 text-gray-400 hover:text-blue-600" onClick={() => setShowInfo(true)}>
+                <HelpCircle className="w-4 h-4" />
+              </Button>
+            </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
@@ -1272,6 +1270,57 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
           </div>
         )}
       </DialogContent>
+
+      {/* Info Dialog */}
+      <Dialog open={showInfo} onOpenChange={() => setShowInfo(false)}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Order Details - Complete Guide</DialogTitle>
+            <DialogDescription>
+              <b>What is the Order Details Modal?</b><br/>
+              This modal gives you a complete view and management interface for a specific order. You can see all customer, order, item, and vendor details, update prices, assign vendors, and track the order's progress.<br/><br/>
+              <b>How to use this modal:</b>
+              <ul className="list-disc ml-6">
+                <li>Review customer and order information at the top</li>
+                <li>Check or update the price before assigning vendors</li>
+                <li>Assign a vendor directly or broadcast to multiple vendors</li>
+                <li>Track vendor responses and approve/reject as needed</li>
+                <li>See all items, service questions, and delivery details</li>
+                <li>Update order status as the order progresses</li>
+              </ul>
+              <br/>
+              <b>Order Statuses Explained:</b>
+              <ul className="list-disc ml-6">
+                <li><b>Pending:</b> Order is created but not yet processed. No vendor assigned or broadcasted.</li>
+                <li><b>Broadcasted:</b> Order has been sent to multiple vendors for response. Waiting for vendor acceptance.</li>
+                <li><b>Confirmed:</b> A vendor has been assigned and confirmed for this order.</li>
+                <li><b>Price Accepted:</b> The customer has accepted the proposed price. Ready for next steps.</li>
+                <li><b>In Progress:</b> Work on the order has started. Vendor is actively working on the service.</li>
+                <li><b>Completed:</b> The order is finished and all work is done. No further action needed.</li>
+                <li><b>Canceled:</b> The order was canceled and will not be processed further.</li>
+              </ul>
+              <br/>
+              <b>Best Practices:</b>
+              <ul className="list-disc ml-6">
+                <li>Always set a valid price before assigning or broadcasting</li>
+                <li>Use broadcast for competitive vendor selection, or assign directly for trusted vendors</li>
+                <li>Keep order status updated for accurate tracking and reporting</li>
+                <li>Review all details before marking an order as completed</li>
+                <li>Communicate with vendors and customers for smooth workflow</li>
+              </ul>
+              <br/>
+              <b>Example Workflow:</b>
+              <ul className="list-disc ml-6">
+                <li>Create order → Set price → Broadcast to vendors → Vendor accepts → Confirm vendor → Work in progress → Completed</li>
+                <li>If order is canceled at any stage, update status to "Canceled"</li>
+              </ul>
+              <br/>
+              <b>Why keep order details accurate?</b><br/>
+              Accurate order details ensure smooth operations, better customer service, and reliable reporting for your business.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
