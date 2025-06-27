@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getVendors } from "@/lib/supabase-client";
+import { supabase } from "@/lib/supabase-client";
 import { 
   Eye, 
   Check, 
@@ -63,10 +64,17 @@ export default function VendorsPage() {
   // Approve vendor mutation
   const approveVendorMutation = useMutation({
     mutationFn: async (vendorId: string) => {
-      return apiRequest("POST", `/api/vendors/${vendorId}/approve`, {});
+      const { error } = await supabase
+        .from('vendor_profiles')
+        .update({
+          status: 'approved',
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', vendorId);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-vendors"] });
       toast({
         title: "Success",
         description: "Vendor approved successfully",
@@ -85,10 +93,14 @@ export default function VendorsPage() {
   // Reject vendor mutation
   const rejectVendorMutation = useMutation({
     mutationFn: async (vendorId: string) => {
-      return apiRequest("POST", `/api/vendors/${vendorId}/reject`, {});
+      const { error } = await supabase
+        .from('vendor_profiles')
+        .update({ status: 'rejected' })
+        .eq('id', vendorId);
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/vendors"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-vendors"] });
       toast({
         title: "Success",
         description: "Vendor rejected successfully",

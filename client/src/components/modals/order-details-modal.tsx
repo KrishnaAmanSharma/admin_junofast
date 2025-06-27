@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabaseStorage, getVendors } from "@/lib/supabase-client";
+import { supabase } from "@/lib/supabase-client";
 
 interface OrderDetailsModalProps {
   orderId: string;
@@ -31,12 +33,10 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   const { toast } = useToast();
 
   const { data: orderDetails, isLoading } = useQuery({
-    queryKey: ["/api/orders", orderId],
+    queryKey: ["supabase-order-details", orderId],
     enabled: isOpen && !!orderId,
     queryFn: async () => {
-      const response = await fetch(`/api/orders/${orderId}`);
-      if (!response.ok) throw new Error('Failed to fetch order details');
-      return response.json();
+      return supabaseStorage.getOrderDetails(orderId);
     }
   });
 
@@ -48,25 +48,32 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     return parts.length > 1 ? parts[parts.length - 2].trim() : null;
   };
 
-  // Vendor responses query
   const { data: vendorResponses, isLoading: responsesLoading } = useQuery({
-    queryKey: ["/api/orders", orderId, "vendor-responses"],
+    queryKey: ["supabase-vendor-responses", orderId],
     enabled: isOpen && !!orderId,
     queryFn: async () => {
-      const response = await fetch(`/api/orders/${orderId}/vendor-responses`);
-      if (!response.ok) throw new Error('Failed to fetch vendor responses');
-      return response.json();
+      // Fetch broadcasts for this order with vendor info
+      const { data: broadcasts, error: broadcastError } = await supabase
+        .from('order_broadcasts')
+        .select(`*, vendor_profiles (id, business_name, full_name, city, rating, is_online)`)
+        .eq('order_id', orderId)
+        .order('broadcast_at', { ascending: false });
+      if (broadcastError) throw broadcastError;
+      // Fetch vendor responses
+      const { data: responses, error: responsesError } = await supabase
+        .from('vendor_responses')
+        .select(`*, vendor_profiles (id, business_name, full_name, city, rating)`)
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false });
+      if (responsesError) throw responsesError;
+      return { broadcasts: broadcasts || [], responses: responses || [] };
     }
   });
 
   const { data: allVendors = [], isLoading: vendorsLoading } = useQuery({
-    queryKey: ["/api/vendors"],
+    queryKey: ["supabase-vendors"],
     enabled: isOpen,
-    queryFn: async () => {
-      const response = await fetch("/api/vendors");
-      if (!response.ok) throw new Error('Failed to fetch vendors');
-      return response.json();
-    }
+    queryFn: getVendors,
   });
 
   // Filter vendors client-side like in the vendors page
@@ -94,11 +101,12 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      await apiRequest("PUT", `/api/orders/${id}`, updates);
+      await supabaseStorage.updateOrder(id, updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-order-details"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-dashboard"] });
       toast({
         title: "Success",
         description: "Order updated successfully",
@@ -123,16 +131,39 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       vendorIds: string | string[]; 
       assignmentType: string;
     }) => {
-      // Both single and broadcast now use the broadcast system
-      await apiRequest("POST", `/api/orders/${orderId}/broadcast`, { 
-        vendorIds: Array.isArray(vendorIds) ? vendorIds : [vendorIds],
-        criteria: broadcastCriteria,
-        assignmentType 
-      });
+      // Both single and broadcast now use direct Supabase calls
+      const vendorIdArray = Array.isArray(vendorIds) ? vendorIds : [vendorIds];
+      const now = new Date().toISOString();
+      if (assignmentType === "single") {
+        // Assign vendor to order and update status
+        await supabaseStorage.updateOrder(orderId, {
+          vendorId: vendorIdArray[0],
+          status: "Confirmed"
+        });
+        // Optionally, you can also insert into order_broadcasts if needed
+      } else {
+        // Broadcast: insert multiple records into order_broadcasts
+        const broadcastRecords = vendorIdArray.map((vendorId) => ({
+          order_id: orderId,
+          vendor_id: vendorId,
+          broadcast_at: now,
+          status: "pending",
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          created_at: now
+        }));
+        // Insert all broadcasts
+        const { error } = await supabase
+          .from('order_broadcasts')
+          .insert(broadcastRecords);
+        if (error) throw error;
+        // Optionally, update order status to Broadcasted
+        await supabaseStorage.updateOrder(orderId, { status: "Broadcasted" });
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-order-details"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-dashboard"] });
       toast({
         title: "Success",
         description: assignmentType === "single" ? "Order sent to vendor - awaiting acceptance" : "Order broadcasted to vendors successfully",
@@ -140,7 +171,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       setSelectedVendor("");
     },
     onError: (error: any) => {
-      const errorMessage = error?.response?.data?.message || error?.response?.data?.error || (assignmentType === "single" ? "Failed to assign vendor" : "Failed to broadcast order");
+      const errorMessage = error?.message || (assignmentType === "single" ? "Failed to assign vendor" : "Failed to broadcast order");
       toast({
         title: "Error",
         description: errorMessage,
@@ -177,6 +208,14 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
   const handleAssignVendor = () => {
     if (!orderId) return;
+    if (orderDetails?.order?.vendorId) {
+      toast({
+        title: "Vendor Already Assigned",
+        description: "This order already has a vendor assigned and cannot be reassigned.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Check if order has a valid price set before broadcasting
     const currentPrice = orderDetails?.order?.approxPrice;
@@ -249,30 +288,54 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     return Array.from(new Set(cities));
   };
 
-  const handleApprovePrice = async (responseId: string, approved: boolean, proposedPrice?: number) => {
+  const handleApprovePrice = async (responseId: string, approved: boolean, proposedPrice?: number, vendorId?: string) => {
     try {
+      // Update the vendor_responses table
       const updates: any = {
-        approved,
-        adminResponse: approved ? "Price approved by admin" : "Price rejected by admin"
+        admin_approved: approved,
+        admin_response: approved ? "Price approved by admin" : "Price rejected by admin",
+        reviewed_at: new Date().toISOString()
       };
+      await supabase
+        .from('vendor_responses')
+        .update(updates)
+        .eq('id', responseId);
 
-      // If price is approved, update the order price
-      if (approved && proposedPrice) {
-        updates.updateOrderPrice = proposedPrice;
+      if (approved && vendorId) {
+        // Assign vendor to order and set status to Confirmed, update price if provided
+        const orderUpdates: any = {
+          vendorId: vendorId,
+          status: "Confirmed"
+        };
+        if (proposedPrice) {
+          orderUpdates.approxPrice = proposedPrice;
+        }
+        await supabaseStorage.updateOrder(orderId, orderUpdates);
+        // Update order_broadcasts status to accepted
+        await supabase
+          .from('order_broadcasts')
+          .update({
+            status: 'accepted',
+            response_at: new Date().toISOString()
+          })
+          .eq('order_id', orderId)
+          .eq('vendor_id', vendorId);
+      } else if (approved && proposedPrice) {
+        // If only price is approved, update the order price
+        await supabaseStorage.updateOrder(orderId, { approxPrice: proposedPrice });
       }
 
-      await apiRequest("POST", `/api/orders/${orderId}/approve-price/${responseId}`, updates);
-      
       // Refresh vendor responses
-      queryClient.invalidateQueries({ queryKey: ["/api/orders", orderId, "vendor-responses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      
+      queryClient.invalidateQueries({ queryKey: ["supabase-vendor-responses", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-order-details", orderId] });
+
       toast({
-        title: approved ? "Price Approved" : "Price Rejected",
-        description: approved ? "Vendor price has been approved and order updated" : "Vendor price request has been rejected",
+        title: approved ? "Price Approved & Vendor Assigned" : "Price Rejected",
+        description: approved ? "Vendor price has been approved, assigned, and order updated" : "Vendor price request has been rejected",
       });
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.response?.data?.error || "Failed to process price approval";
+      const errorMessage = error?.message || "Failed to process price approval";
       toast({
         title: "Error",
         description: errorMessage,
@@ -283,37 +346,48 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
   const handleApproveVendor = async (responseId: string, vendorId: string, proposedPrice?: number) => {
     try {
-      // First approve the vendor response
-      await apiRequest("POST", `/api/orders/${orderId}/approve-price/${responseId}`, {
-        approved: true,
-        adminResponse: "Vendor approved and assigned to order"
-      });
+      // Approve the vendor response
+      await supabase
+        .from('vendor_responses')
+        .update({
+          admin_approved: true,
+          admin_response: "Vendor approved and assigned to order",
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', responseId);
 
-      // Then update the order with vendor assignment and status
+      // Update the order with vendor assignment and status
       const orderUpdates: any = {
         status: "Confirmed",
         vendorId: vendorId
       };
-
-      // Update price if proposed
       if (proposedPrice) {
         orderUpdates.approxPrice = proposedPrice;
       }
+      await supabaseStorage.updateOrder(orderId, orderUpdates);
 
-      await apiRequest("PUT", `/api/orders/${orderId}`, orderUpdates);
-      
+      // Optionally, update order_broadcasts status to accepted
+      await supabase
+        .from('order_broadcasts')
+        .update({
+          status: 'accepted',
+          response_at: new Date().toISOString()
+        })
+        .eq('order_id', orderId)
+        .eq('vendor_id', vendorId);
+
       // Invalidate all related queries
-      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}/vendor-responses`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      
+      queryClient.invalidateQueries({ queryKey: ["supabase-vendor-responses", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-order-details", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-dashboard"] });
+
       toast({
         title: "Success",
         description: "Vendor approved and assigned to order",
       });
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.response?.data?.error || "Failed to approve vendor";
+      const errorMessage = error?.message || "Failed to approve vendor";
       toast({
         title: "Error",
         description: errorMessage,
@@ -324,12 +398,16 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
   const handleRejectVendor = async (responseId: string) => {
     try {
-      await apiRequest("POST", `/api/orders/${orderId}/approve-price/${responseId}`, {
-        approved: false,
-        adminResponse: "Vendor application rejected"
-      });
+      await supabase
+        .from('vendor_responses')
+        .update({
+          admin_approved: false,
+          admin_response: "Vendor application rejected",
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', responseId);
       
-      queryClient.invalidateQueries({ queryKey: [`/api/orders/${orderId}/vendor-responses`] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-vendor-responses", orderId] });
       
       toast({
         title: "Success",
@@ -342,7 +420,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
         variant: "destructive",
       });
     }
-  };;
+  };
 
   const currentStatus = orderDetails?.order?.status;
   const canEditPrice = currentStatus === "Pending" || currentStatus === "Price Updated";
@@ -849,7 +927,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                                   <Button 
                                     size="sm" 
                                     className="bg-blue-600 hover:bg-blue-700"
-                                    onClick={() => handleApprovePrice(response.id, true, response.proposed_price)}
+                                    onClick={() => handleApprovePrice(response.id, true, response.proposed_price, response.vendor_id)}
                                   >
                                     Approve and Assign
                                   </Button>

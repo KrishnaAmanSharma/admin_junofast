@@ -385,6 +385,7 @@ export const supabaseStorage = {
     if (updates.pickupPincode !== undefined) dbUpdates.pickup_pincode = updates.pickupPincode;
     if (updates.dropAddress !== undefined) dbUpdates.drop_address = updates.dropAddress;
     if (updates.dropPincode !== undefined) dbUpdates.drop_pincode = updates.dropPincode;
+    if (updates.vendorId !== undefined) dbUpdates.vendor_id = updates.vendorId;
     dbUpdates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase

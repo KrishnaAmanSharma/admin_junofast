@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertServiceTypeSchema } from "@shared/schema";
 import type { ServiceType, InsertServiceType } from "@shared/schema";
 import { z } from "zod";
+import { useEffect } from "react";
 
 interface ServiceTypeModalProps {
   serviceType: ServiceType | null;
@@ -73,6 +74,17 @@ export function ServiceTypeModal({ serviceType, isOpen, onClose }: ServiceTypeMo
     onClose();
     form.reset();
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        name: serviceType?.name || "",
+        description: serviceType?.description || "",
+        imageUrl: serviceType?.imageUrl || "",
+        isActive: serviceType?.isActive ?? true,
+      });
+    }
+  }, [serviceType, isOpen]);
 
   if (!isOpen) return null;
 

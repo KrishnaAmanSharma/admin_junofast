@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Download } from "lucide-react";
 import type { Order, ServiceType } from "@shared/schema";
+import { supabaseStorage } from "@/lib/supabase-client";
 
 export default function Orders() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -27,26 +28,19 @@ export default function Orders() {
   });
 
   const { data: orders, isLoading } = useQuery<Order[]>({
-    queryKey: ["/api/orders", filters, searchTerm],
+    queryKey: ["supabase-orders", filters, searchTerm],
     enabled: true,
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (filters.status && filters.status !== '') {
-        params.append('status', filters.status);
+      // Map filters to match getOrders signature
+      const mappedFilters: any = {};
+      if (filters.status && filters.status !== "" && filters.status !== "All Status") {
+        mappedFilters.status = filters.status;
       }
-      if (filters.serviceType && filters.serviceType !== '') {
-        params.append('serviceType', filters.serviceType);
+      if (filters.serviceType && filters.serviceType !== "" && filters.serviceType !== "All Services") {
+        mappedFilters.serviceType = filters.serviceType;
       }
-      if (filters.dateRange && filters.dateRange !== '') {
-        params.append('dateRange', filters.dateRange);
-      }
-      if (searchTerm && searchTerm !== '') {
-        params.append('search', searchTerm);
-      }
-      
-      const response = await fetch(`/api/orders?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch orders');
-      return response.json();
+      // Optionally add more filters if getOrders supports them
+      return supabaseStorage.getOrders(mappedFilters);
     }
   });
 
