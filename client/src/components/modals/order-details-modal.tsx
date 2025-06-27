@@ -605,356 +605,8 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
               )}
 
               {/* Vendor Assignment */}
-              <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <h5 className="font-medium text-admin-slate">Vendor Assignment</h5>
-                  {orderDetails?.order?.vendorId && (
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      Already Assigned
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Assignment Type Selection */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Assignment Type</Label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        value="single"
-                        checked={assignmentType === "single"}
-                        onChange={(e) => setAssignmentType(e.target.value)}
-                        className="text-blue-600"
-                      />
-                      <span className="text-sm">Single Vendor Assignment</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        value="broadcast"
-                        checked={assignmentType === "broadcast"}
-                        onChange={(e) => setAssignmentType(e.target.value)}
-                        className="text-blue-600"
-                      />
-                      <span className="text-sm">Broadcast to Multiple Vendors</span>
-                    </label>
-                  </div>
-                </div>
-
-                {assignmentType === "single" ? (
-                  // Single Vendor Assignment
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <Select value={vendorFilter} onValueChange={setVendorFilter}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Filter vendors" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Vendors</SelectItem>
-                          <SelectItem value="approved">Approved Only</SelectItem>
-                          <SelectItem value="online">Online Only</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="text-sm text-gray-600 flex items-center">
-                        {vendorsLoading ? "Loading..." : `${vendors.length} vendors`}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Select value={selectedVendor} onValueChange={setSelectedVendor}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select vendor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allVendors
-                            .filter((vendor: any) => vendor.status === 'approved')
-                            .map((vendor: any) => (
-                              <SelectItem key={vendor.id} value={vendor.id}>
-                                {vendor.business_name} ({vendor.full_name}) - {vendor.city}
-                                {vendor.is_online && " 🟢"}
-                              </SelectItem>
-                            ))}
-                          {allVendors.filter((vendor: any) => vendor.status === 'approved').length === 0 && (
-                            <SelectItem value="no-vendors" disabled>
-                              {vendorsLoading ? "Loading vendors..." : "No approved vendors available"}
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <Button 
-                        onClick={handleAssignVendor}
-                        disabled={
-                          !canBroadcast ||
-                          assignVendorMutation.isPending || 
-                          !selectedVendor || 
-                          selectedVendor === "no-vendors" ||
-                          !orderDetails?.order?.approxPrice ||
-                          orderDetails?.order?.approxPrice <= 0
-                        }
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
-                      >
-                        {!canBroadcast ? "Order Assigned" :
-                         assignVendorMutation.isPending ? "Sending..." : 
-                         (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
-                         "Send to Vendor"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  // Broadcast Assignment
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* City Selection */}
-                      <div>
-                        <Label className="text-sm font-medium">Cities (Optional)</Label>
-                        <Select 
-                          value={broadcastCriteria.cities.join(",")} 
-                          onValueChange={(value) => 
-                            setBroadcastCriteria(prev => ({
-                              ...prev, 
-                              cities: value === "all-cities" ? [] : value ? value.split(",") : []
-                            }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="All cities" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all-cities">All Cities</SelectItem>
-                            {getUniqueCities().map((city) => (
-                              <SelectItem key={city} value={city}>{city}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Minimum Rating */}
-                      <div>
-                        <Label className="text-sm font-medium">Minimum Rating</Label>
-                        <Select 
-                          value={broadcastCriteria.minRating.toString()} 
-                          onValueChange={(value) => 
-                            setBroadcastCriteria(prev => ({...prev, minRating: parseFloat(value)}))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Any rating" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">Any Rating</SelectItem>
-                            <SelectItem value="3">3+ Stars</SelectItem>
-                            <SelectItem value="4">4+ Stars</SelectItem>
-                            <SelectItem value="4.5">4.5+ Stars</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-4 items-end">
-                      <div className="flex-1">
-                        <Label className="text-sm font-medium">Max Vendors to Notify</Label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="50"
-                          value={broadcastCriteria.maxVendors}
-                          onChange={(e) => 
-                            setBroadcastCriteria(prev => ({
-                              ...prev, 
-                              maxVendors: parseInt(e.target.value) || 10
-                            }))
-                          }
-                          className="w-full px-3 py-2 border rounded-md text-sm"
-                          placeholder="10"
-                        />
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {getFilteredVendorsForBroadcast().length} vendors will be notified
-                      </div>
-                      <Button 
-                        onClick={handleAssignVendor}
-                        disabled={
-                          !canBroadcast ||
-                          assignVendorMutation.isPending || 
-                          getFilteredVendorsForBroadcast().length === 0 ||
-                          !orderDetails?.order?.approxPrice ||
-                          orderDetails?.order?.approxPrice <= 0
-                        }
-                        size="sm"
-                        className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400"
-                      >
-                        {!canBroadcast ? "Order Assigned" :
-                         assignVendorMutation.isPending ? "Broadcasting..." : 
-                         (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
-                         "Broadcast Order"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Vendor Responses Section */}
-                {vendorResponses && (vendorResponses.broadcasts?.length > 0 || vendorResponses.responses?.length > 0) && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                    <h6 className="font-medium text-admin-slate mb-3">Vendor Responses</h6>
-                    
-                    {/* Broadcasts Status */}
-                    {vendorResponses.broadcasts?.length > 0 && (
-                      <div className="space-y-2 mb-4">
-                        <p className="text-sm font-medium text-gray-700">Sent to {vendorResponses.broadcasts.length} vendors:</p>
-                        <div className="grid gap-2">
-                          {vendorResponses.broadcasts.map((broadcast: any) => (
-                            <div key={broadcast.id} className="flex items-center justify-between p-2 bg-white rounded border text-sm">
-                              <div>
-                                <span className="font-medium">{broadcast.vendor_profiles?.business_name}</span>
-                                <span className="text-gray-500 ml-2">({broadcast.vendor_profiles?.city})</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  broadcast.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                                  broadcast.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                  broadcast.status === 'expired' ? 'bg-gray-100 text-gray-800' :
-                                  'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {broadcast.status}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {new Date(broadcast.broadcast_at).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Vendor Acceptances */}
-                    {vendorResponses.responses?.some((r: any) => r.response_type === 'accept') && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-700">Vendor Acceptances:</p>
-                        <div className="grid gap-2">
-                          {vendorResponses.responses
-                            .filter((response: any) => response.response_type === 'accept')
-                            .map((response: any) => (
-                            <div key={response.id} className="p-3 bg-green-50 rounded border border-green-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <div>
-                                  <span className="font-medium">{response.vendor_profiles?.business_name}</span>
-                                  <span className="text-gray-500 ml-2">({response.vendor_profiles?.full_name})</span>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {response.vendor_profiles?.city} • {response.vendor_profiles?.phone_number}
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    response.admin_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    {response.admin_approved ? 'Confirmed' : 'Awaiting Approval'}
-                                  </span>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    {new Date(response.created_at).toLocaleDateString()}
-                                  </div>
-                                </div>
-                              </div>
-                              {response.message && (
-                                <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
-                              )}
-                              {response.proposed_price && (
-                                <div className="text-sm text-green-700 mb-2 font-medium">
-                                  Quoted Price: ₹{response.proposed_price}
-                                </div>
-                              )}
-                              {!response.admin_approved && canApproveResponses && (
-                                <div className="flex gap-2 mt-3">
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-green-600 hover:bg-green-700"
-                                    onClick={() => handleApproveVendor(response.id, response.vendor_id, response.proposed_price)}
-                                  >
-                                    Approve & Assign
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => handleRejectVendor(response.id)}
-                                  >
-                                    Reject
-                                  </Button>
-                                </div>
-                              )}
-                              {!response.admin_approved && !canApproveResponses && (
-                                <div className="text-sm text-gray-500 mt-3 italic">
-                                  Order already assigned to vendor
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Price Update Requests */}
-                    {vendorResponses.responses?.some((r: any) => r.response_type === 'price_update') && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-700">Price Update Requests:</p>
-                        <div className="grid gap-2">
-                          {vendorResponses.responses
-                            .filter((response: any) => response.response_type === 'price_update')
-                            .map((response: any) => (
-                            <div key={response.id} className="p-3 bg-blue-50 rounded border border-blue-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium">{response.vendor_profiles?.business_name}</span>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  response.admin_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {response.admin_approved ? 'Price Approved' : 'Pending Review'}
-                                </span>
-                              </div>
-                              {response.proposed_price && (
-                                <div className="text-sm text-gray-600 mb-2">
-                                  Requested Price: ₹{response.proposed_price}
-                                  {response.original_price && (
-                                    <span className="ml-2 text-gray-400">(Original: ₹{response.original_price})</span>
-                                  )}
-                                </div>
-                              )}
-                              {response.message && (
-                                <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
-                              )}
-                              {!response.admin_approved && canApproveResponses && (
-                                <div className="flex gap-2">
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                    onClick={() => handleApprovePrice(response.id, true, response.proposed_price, response.vendor_id)}
-                                  >
-                                    Approve and Assign
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => handleApprovePrice(response.id, false)}
-                                  >
-                                    Reject
-                                  </Button>
-                                </div>
-                              )}
-                              {!response.admin_approved && !canApproveResponses && (
-                                <div className="text-sm text-gray-500 mt-3 italic">
-                                  Order already assigned to vendor
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Current Assignment Info */}
-                {orderDetails?.order?.vendorId && (() => {
+              {orderDetails?.order?.vendorId ? (
+                (() => {
                   const assignedVendor = allVendors.find((vendor: any) => vendor.id === orderDetails.order.vendorId);
                   return (
                     <div className="mt-3 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -997,7 +649,6 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                               </p>
                             </div>
                           </div>
-                          
                           {assignedVendor.status === 'approved' && (
                             <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-green-200">
                               <div className="text-center p-2 bg-white rounded border">
@@ -1018,7 +669,6 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                               </div>
                             </div>
                           )}
-                          
                           <div className="text-xs text-gray-500 mt-2">
                             Order Status: <span className="font-medium">{orderDetails.order.status}</span>
                           </div>
@@ -1031,9 +681,355 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       )}
                     </div>
                   );
-                })()}
-              </div>
-              
+                })()
+              ) : (
+                <>
+                  <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-medium text-admin-slate">Vendor Assignment</h5>
+                    </div>
+
+                    {/* Assignment Type Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Assignment Type</Label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            value="single"
+                            checked={assignmentType === "single"}
+                            onChange={(e) => setAssignmentType(e.target.value)}
+                            className="text-blue-600"
+                          />
+                          <span className="text-sm">Single Vendor Assignment</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            value="broadcast"
+                            checked={assignmentType === "broadcast"}
+                            onChange={(e) => setAssignmentType(e.target.value)}
+                            className="text-blue-600"
+                          />
+                          <span className="text-sm">Broadcast to Multiple Vendors</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {assignmentType === "single" ? (
+                      // Single Vendor Assignment
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          <Select value={vendorFilter} onValueChange={setVendorFilter}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Filter vendors" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Vendors</SelectItem>
+                              <SelectItem value="approved">Approved Only</SelectItem>
+                              <SelectItem value="online">Online Only</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <div className="text-sm text-gray-600 flex items-center">
+                            {vendorsLoading ? "Loading..." : `${vendors.length} vendors`}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Select value={selectedVendor} onValueChange={setSelectedVendor}>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select vendor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {allVendors
+                                .filter((vendor: any) => vendor.status === 'approved')
+                                .map((vendor: any) => (
+                                  <SelectItem key={vendor.id} value={vendor.id}>
+                                    {vendor.business_name} ({vendor.full_name}) - {vendor.city}
+                                    {vendor.is_online && " 🟢"}
+                                  </SelectItem>
+                                ))}
+                              {allVendors.filter((vendor: any) => vendor.status === 'approved').length === 0 && (
+                                <SelectItem value="no-vendors" disabled>
+                                  {vendorsLoading ? "Loading vendors..." : "No approved vendors available"}
+                                </SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <Button 
+                            onClick={handleAssignVendor}
+                            disabled={
+                              !canBroadcast ||
+                              assignVendorMutation.isPending || 
+                              !selectedVendor || 
+                              selectedVendor === "no-vendors" ||
+                              !orderDetails?.order?.approxPrice ||
+                              orderDetails?.order?.approxPrice <= 0
+                            }
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+                          >
+                            {!canBroadcast ? "Order Assigned" :
+                             assignVendorMutation.isPending ? "Sending..." : 
+                             (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
+                             "Send to Vendor"}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Broadcast Assignment
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* City Selection */}
+                          <div>
+                            <Label className="text-sm font-medium">Cities (Optional)</Label>
+                            <Select 
+                              value={broadcastCriteria.cities.join(",")} 
+                              onValueChange={(value) => 
+                                setBroadcastCriteria(prev => ({
+                                  ...prev, 
+                                  cities: value === "all-cities" ? [] : value ? value.split(",") : []
+                                }))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="All cities" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all-cities">All Cities</SelectItem>
+                                {getUniqueCities().map((city) => (
+                                  <SelectItem key={city} value={city}>{city}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Minimum Rating */}
+                          <div>
+                            <Label className="text-sm font-medium">Minimum Rating</Label>
+                            <Select 
+                              value={broadcastCriteria.minRating.toString()} 
+                              onValueChange={(value) => 
+                                setBroadcastCriteria(prev => ({...prev, minRating: parseFloat(value)}))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Any rating" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">Any Rating</SelectItem>
+                                <SelectItem value="3">3+ Stars</SelectItem>
+                                <SelectItem value="4">4+ Stars</SelectItem>
+                                <SelectItem value="4.5">4.5+ Stars</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-4 items-end">
+                          <div className="flex-1">
+                            <Label className="text-sm font-medium">Max Vendors to Notify</Label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="50"
+                              value={broadcastCriteria.maxVendors}
+                              onChange={(e) => 
+                                setBroadcastCriteria(prev => ({
+                                  ...prev, 
+                                  maxVendors: parseInt(e.target.value) || 10
+                                }))
+                              }
+                              className="w-full px-3 py-2 border rounded-md text-sm"
+                              placeholder="10"
+                            />
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {getFilteredVendorsForBroadcast().length} vendors will be notified
+                          </div>
+                          <Button 
+                            onClick={handleAssignVendor}
+                            disabled={
+                              !canBroadcast ||
+                              assignVendorMutation.isPending || 
+                              getFilteredVendorsForBroadcast().length === 0 ||
+                              !orderDetails?.order?.approxPrice ||
+                              orderDetails?.order?.approxPrice <= 0
+                            }
+                            size="sm"
+                            className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400"
+                          >
+                            {!canBroadcast ? "Order Assigned" :
+                             assignVendorMutation.isPending ? "Broadcasting..." : 
+                             (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) ? "Price Required" :
+                             "Broadcast Order"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Vendor Responses Section */}
+                  {vendorResponses && (vendorResponses.broadcasts?.length > 0 || vendorResponses.responses?.length > 0) && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                      <h6 className="font-medium text-admin-slate mb-3">Vendor Responses</h6>
+                      
+                      {/* Broadcasts Status */}
+                      {vendorResponses.broadcasts?.length > 0 && (
+                        <div className="space-y-2 mb-4">
+                          <p className="text-sm font-medium text-gray-700">Sent to {vendorResponses.broadcasts.length} vendors:</p>
+                          <div className="grid gap-2">
+                            {vendorResponses.broadcasts.map((broadcast: any) => (
+                              <div key={broadcast.id} className="flex items-center justify-between p-2 bg-white rounded border text-sm">
+                                <div>
+                                  <span className="font-medium">{broadcast.vendor_profiles?.business_name}</span>
+                                  <span className="text-gray-500 ml-2">({broadcast.vendor_profiles?.city})</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    broadcast.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                    broadcast.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                    broadcast.status === 'expired' ? 'bg-gray-100 text-gray-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {broadcast.status}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(broadcast.broadcast_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Vendor Acceptances */}
+                      {vendorResponses.responses?.some((r: any) => r.response_type === 'accept') && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-gray-700">Vendor Acceptances:</p>
+                          <div className="grid gap-2">
+                            {vendorResponses.responses
+                              .filter((response: any) => response.response_type === 'accept')
+                              .map((response: any) => (
+                              <div key={response.id} className="p-3 bg-green-50 rounded border border-green-200">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div>
+                                    <span className="font-medium">{response.vendor_profiles?.business_name}</span>
+                                    <span className="text-gray-500 ml-2">({response.vendor_profiles?.full_name})</span>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {response.vendor_profiles?.city} • {response.vendor_profiles?.phone_number}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                      response.admin_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                      {response.admin_approved ? 'Confirmed' : 'Awaiting Approval'}
+                                    </span>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {new Date(response.created_at).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                </div>
+                                {response.message && (
+                                  <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
+                                )}
+                                {response.proposed_price && (
+                                  <div className="text-sm text-green-700 mb-2 font-medium">
+                                    Quoted Price: ₹{response.proposed_price}
+                                  </div>
+                                )}
+                                {!response.admin_approved && canApproveResponses && (
+                                  <div className="flex gap-2 mt-3">
+                                    <Button 
+                                      size="sm" 
+                                      className="bg-green-600 hover:bg-green-700"
+                                      onClick={() => handleApproveVendor(response.id, response.vendor_id, response.proposed_price)}
+                                    >
+                                      Approve & Assign
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => handleRejectVendor(response.id)}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </div>
+                                )}
+                                {!response.admin_approved && !canApproveResponses && (
+                                  <div className="text-sm text-gray-500 mt-3 italic">
+                                    Order already assigned to vendor
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Price Update Requests */}
+                      {vendorResponses.responses?.some((r: any) => r.response_type === 'price_update') && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-gray-700">Price Update Requests:</p>
+                          <div className="grid gap-2">
+                            {vendorResponses.responses
+                              .filter((response: any) => response.response_type === 'price_update')
+                              .map((response: any) => (
+                              <div key={response.id} className="p-3 bg-blue-50 rounded border border-blue-200">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium">{response.vendor_profiles?.business_name}</span>
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    response.admin_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {response.admin_approved ? 'Price Approved' : 'Pending Review'}
+                                  </span>
+                                </div>
+                                {response.proposed_price && (
+                                  <div className="text-sm text-gray-600 mb-2">
+                                    Requested Price: ₹{response.proposed_price}
+                                    {response.original_price && (
+                                      <span className="ml-2 text-gray-400">(Original: ₹{response.original_price})</span>
+                                    )}
+                                  </div>
+                                )}
+                                {response.message && (
+                                  <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
+                                )}
+                                {!response.admin_approved && canApproveResponses && (
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      className="bg-blue-600 hover:bg-blue-700"
+                                      onClick={() => handleApprovePrice(response.id, true, response.proposed_price, response.vendor_id)}
+                                    >
+                                      Approve and Assign
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => handleApprovePrice(response.id, false)}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </div>
+                                )}
+                                {!response.admin_approved && !canApproveResponses && (
+                                  <div className="text-sm text-gray-500 mt-3 italic">
+                                    Order already assigned to vendor
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
               {/* Status Update */}
               <div className="max-w-md">
                 <Label htmlFor="newStatus" className="text-sm font-medium text-gray-700">

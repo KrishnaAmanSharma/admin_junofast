@@ -626,7 +626,8 @@ export const supabaseStorage = {
       approxPrice: order.approx_price,
       createdAt: order.created_at,
       updatedAt: order.updated_at,
-      userId: order.user_id
+      userId: order.user_id,
+      vendorId: order.vendor_id
     };
 
     // Map custom items with their photos

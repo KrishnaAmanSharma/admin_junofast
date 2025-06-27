@@ -180,11 +180,11 @@ export default function CommonItems() {
               return (
                 <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                   <img 
-                    src={item.imageUrl} 
+                    src={item.imageUrl || "https://images.unsplash.com/photo-1573376670774-4427757f7963?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Ym94fGVufDB8fDB8fHww"} 
                     alt={item.name}
                     className="w-full h-32 object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200";
+                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1573376670774-4427757f7963?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Ym94fGVufDB8fDB8fHww";
                     }}
                   />
                   <div className="p-4">
