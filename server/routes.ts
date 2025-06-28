@@ -409,7 +409,7 @@ export async function registerRoutes(app: Express) {
       console.log('Updating order:', id, 'with data:', updateData);
       
       // Define the valid status progression
-      const statusProgression = ['Pending', 'Broadcasted', 'Confirmed', 'Price Accepted', 'In Progress', 'Completed', 'Canceled'];
+      const statusProgression = ['Pending', 'Broadcasted', 'Confirmed', 'Price Accepted', 'In Progress', 'Completed', 'Cancelled'];
       
       // Get current order status if updating status
       if (updateData.status !== undefined) {
@@ -427,8 +427,8 @@ export async function registerRoutes(app: Express) {
         const currentIndex = statusProgression.indexOf(currentOrder.status);
         const newIndex = statusProgression.indexOf(updateData.status);
         
-        // Prevent backward status progression (except from Pending to any status or to Canceled)
-        if (currentIndex > newIndex && updateData.status !== 'Canceled' && currentOrder.status !== 'Pending') {
+        // Prevent backward status progression (except from Pending to any status or to Cancelled)
+        if (currentIndex > newIndex && updateData.status !== 'Cancelled' && currentOrder.status !== 'Pending') {
           return res.status(400).json({ 
             error: 'Invalid status progression',
             message: `Cannot change status from ${currentOrder.status} to ${updateData.status}. Status can only move forward.`

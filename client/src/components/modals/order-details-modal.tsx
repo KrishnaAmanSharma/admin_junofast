@@ -154,7 +154,8 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       await supabaseStorage.updateOrder(orderId, { status: "Broadcasted" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supabase-order-details"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-order-details", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-vendor-responses", orderId] });
       queryClient.invalidateQueries({ queryKey: ["supabase-orders"] });
       queryClient.invalidateQueries({ queryKey: ["supabase-dashboard"] });
       toast({
@@ -1043,7 +1044,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                         <SelectItem value="In Progress">In Progress</SelectItem>
                       )}
                       <SelectItem value="Completed">Completed</SelectItem>
-                      <SelectItem value="Canceled">Canceled</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button 
@@ -1297,7 +1298,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                 <li><b>Price Accepted:</b> The customer has accepted the proposed price. Ready for next steps.</li>
                 <li><b>In Progress:</b> Work on the order has started. Vendor is actively working on the service.</li>
                 <li><b>Completed:</b> The order is finished and all work is done. No further action needed.</li>
-                <li><b>Canceled:</b> The order was canceled and will not be processed further.</li>
+                <li><b>Cancelled:</b> The order was cancelled and will not be processed further.</li>
               </ul>
               <br/>
               <b>Best Practices:</b>
@@ -1312,7 +1313,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
               <b>Example Workflow:</b>
               <ul className="list-disc ml-6">
                 <li>Create order → Set price → Broadcast to vendors → Vendor accepts → Confirm vendor → Work in progress → Completed</li>
-                <li>If order is canceled at any stage, update status to "Canceled"</li>
+                <li>If order is cancelled at any stage, update status to "Cancelled"</li>
               </ul>
               <br/>
               <b>Why keep order details accurate?</b><br/>
