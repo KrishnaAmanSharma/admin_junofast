@@ -649,7 +649,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                             </div>
                           </div>
                           {assignedVendor.status === 'approved' && (
-                            <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-green-200">
+                            <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-green-200">
                               <div className="text-center p-2 bg-white rounded border">
                                 <div className="font-semibold text-green-700">{assignedVendor.completed_orders || 0}</div>
                                 <div className="text-xs text-gray-600">Completed Orders</div>
@@ -659,12 +659,6 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                                   {assignedVendor.rating > 0 ? `${assignedVendor.rating}/5` : 'New'}
                                 </div>
                                 <div className="text-xs text-gray-600">Rating</div>
-                              </div>
-                              <div className="text-center p-2 bg-white rounded border">
-                                <div className="font-semibold text-green-700">
-                                  {assignedVendor.last_active_at ? new Date(assignedVendor.last_active_at).toLocaleDateString() : 'Never'}
-                                </div>
-                                <div className="text-xs text-gray-600">Last Active</div>
                               </div>
                             </div>
                           )}
