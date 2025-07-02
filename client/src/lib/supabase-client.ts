@@ -227,29 +227,48 @@ export const supabaseStorage = {
   },
 
   async createServiceQuestion(question: any) {
-    // Transform camelCase to snake_case for database
+    // 1. Get all questions for this service type, ordered by display_order
+    const { data: existingQuestions, error: fetchError } = await supabase
+      .from('service_questions')
+      .select('id, display_order')
+      .eq('service_type_id', question.serviceTypeId)
+      .order('display_order');
+    if (fetchError) throw fetchError;
+    let displayOrder = question.displayOrder;
+    if (displayOrder === undefined || displayOrder === null || isNaN(displayOrder)) {
+      // If not provided, set to next available
+      displayOrder = existingQuestions.length;
+    } else {
+      // If provided, shift all at/after this position up by 1
+      for (let i = existingQuestions.length - 1; i >= 0; i--) {
+        if (existingQuestions[i].display_order >= displayOrder) {
+          await supabase
+            .from('service_questions')
+            .update({ display_order: existingQuestions[i].display_order + 1 })
+            .eq('id', existingQuestions[i].id);
+        }
+      }
+    }
+    // Insert the new question
     const dbQuestion = {
       service_type_id: question.serviceTypeId,
       question: question.question,
       question_type: question.questionType,
       is_required: question.isRequired ?? true,
-      display_order: question.displayOrder ?? 0,
+      display_order: displayOrder,
       options: question.options || null,
       parent_question_id: question.parentQuestionId || null,
       is_active: question.isActive ?? true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-
     const { data, error } = await supabase
       .from('service_questions')
       .insert(dbQuestion)
       .select()
       .single();
-    
     if (error) throw error;
-    
-    // Transform back to camelCase - keep options as proper arrays
+    // Return camelCase
     return {
       id: data.id,
       serviceTypeId: data.service_type_id,
@@ -257,7 +276,7 @@ export const supabaseStorage = {
       questionType: data.question_type,
       isRequired: data.is_required,
       displayOrder: data.display_order,
-      options: data.options, // Keep as-is since they're now proper JSON arrays
+      options: data.options,
       parentQuestionId: data.parent_question_id,
       isActive: data.is_active,
       createdAt: data.created_at,
@@ -266,7 +285,38 @@ export const supabaseStorage = {
   },
 
   async updateServiceQuestion(id: string, updates: any) {
-    // Transform camelCase to snake_case for database
+    // Get the current question
+    const { data: current, error: fetchError } = await supabase
+      .from('service_questions')
+      .select('id, service_type_id, display_order')
+      .eq('id', id)
+      .single();
+    if (fetchError) throw fetchError;
+    let newOrder = updates.displayOrder;
+    if (newOrder === undefined || newOrder === null || isNaN(newOrder)) newOrder = current.display_order;
+    // If displayOrder is changing, re-sequence others
+    if (newOrder !== current.display_order) {
+      // Get all for this service type, ordered
+      const { data: all, error: allError } = await supabase
+        .from('service_questions')
+        .select('id, display_order')
+        .eq('service_type_id', current.service_type_id)
+        .order('display_order');
+      if (allError) throw allError;
+      // Remove current from list
+      const filtered = all.filter(q => q.id !== id);
+      // Insert at newOrder
+      filtered.splice(newOrder, 0, { id, display_order: newOrder });
+      // Re-sequence all
+      for (let i = 0; i < filtered.length; i++) {
+        await supabase
+          .from('service_questions')
+          .update({ display_order: i })
+          .eq('id', filtered[i].id);
+      }
+      updates.displayOrder = newOrder;
+    }
+    // Update the question
     const dbUpdates: any = {};
     if (updates.serviceTypeId !== undefined) dbUpdates.service_type_id = updates.serviceTypeId;
     if (updates.question !== undefined) dbUpdates.question = updates.question;
@@ -277,17 +327,13 @@ export const supabaseStorage = {
     if (updates.parentQuestionId !== undefined) dbUpdates.parent_question_id = updates.parentQuestionId;
     if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
     dbUpdates.updated_at = new Date().toISOString();
-
     const { data, error } = await supabase
       .from('service_questions')
       .update(dbUpdates)
       .eq('id', id)
       .select()
       .single();
-    
     if (error) throw error;
-    
-    // Transform back to camelCase - keep options as proper arrays
     return {
       id: data.id,
       serviceTypeId: data.service_type_id,
@@ -295,7 +341,7 @@ export const supabaseStorage = {
       questionType: data.question_type,
       isRequired: data.is_required,
       displayOrder: data.display_order,
-      options: data.options, // Keep as-is since they're now proper JSON arrays
+      options: data.options,
       parentQuestionId: data.parent_question_id,
       isActive: data.is_active,
       createdAt: data.created_at,
@@ -304,12 +350,38 @@ export const supabaseStorage = {
   },
 
   async deleteServiceQuestion(id: string) {
+    // Get the question to delete
+    const { data: toDelete, error: fetchError } = await supabase
+      .from('service_questions')
+      .select('id, service_type_id, display_order')
+      .eq('id', id)
+      .single();
+    if (fetchError) throw fetchError;
+    // First, delete all order_question_answers referencing this question
+    const { error: answerDeleteError } = await supabase
+      .from('order_question_answers')
+      .delete()
+      .eq('question_id', id);
+    if (answerDeleteError) throw answerDeleteError;
+    // Then, delete the service question itself
     const { error } = await supabase
       .from('service_questions')
       .delete()
       .eq('id', id);
-    
     if (error) throw error;
+    // Resequence remaining questions for this service type
+    const { data: remaining, error: remError } = await supabase
+      .from('service_questions')
+      .select('id')
+      .eq('service_type_id', toDelete.service_type_id)
+      .order('display_order');
+    if (remError) throw remError;
+    for (let i = 0; i < remaining.length; i++) {
+      await supabase
+        .from('service_questions')
+        .update({ display_order: i })
+        .eq('id', remaining[i].id);
+    }
   },
 
   async getOrders(filters?: { status?: string; serviceType?: string; limit?: number }) {
