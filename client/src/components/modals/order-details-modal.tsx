@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, HelpCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabaseStorage, getVendors } from "@/lib/supabase-client";
@@ -32,6 +32,16 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   });
   const { toast } = useToast();
   const [showInfo, setShowInfo] = useState(false);
+  const [customerPrice, setCustomerPrice] = useState("");
+  const [customerPriceError, setCustomerPriceError] = useState("");
+  const [payments, setPayments] = useState<any[]>([]);
+  const [paymentTransactions, setPaymentTransactions] = useState<any[]>([]);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [newPaymentAmount, setNewPaymentAmount] = useState("");
+  const [newPaymentType, setNewPaymentType] = useState<'payment' | 'refund'>('payment');
+  const [newPaymentNotes, setNewPaymentNotes] = useState("");
+  const [addPaymentLoading, setAddPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
 
   const { data: orderDetails, isLoading } = useQuery({
     queryKey: ["supabase-order-details", orderId],
@@ -98,7 +108,33 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     return serviceTypeMatch && statusMatch;
   });
 
-
+  // Fetch payment info when vendor is assigned
+  useEffect(() => {
+    const fetchPayments = async () => {
+      if (orderDetails && orderDetails.order && orderDetails.order.vendorId && orderId) {
+        setPaymentLoading(true);
+        try {
+          const payment = await supabaseStorage.getVendorOrderPayment(orderId, orderDetails.order.vendorId);
+          setPayments(payment ? [payment] : []);
+          if (payment) {
+            const txns = await supabaseStorage.getOrderPaymentTransactions(payment.id);
+            setPaymentTransactions(txns);
+          } else {
+            setPaymentTransactions([]);
+          }
+        } catch (e) {
+          setPayments([]);
+          setPaymentTransactions([]);
+        } finally {
+          setPaymentLoading(false);
+        }
+      } else {
+        setPayments([]);
+        setPaymentTransactions([]);
+      }
+    };
+    fetchPayments();
+  }, [orderDetails?.order?.vendorId, orderId, isOpen]);
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
@@ -339,6 +375,16 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   };
 
   const handleApproveVendor = async (responseId: string, vendorId: string, proposedPrice?: number) => {
+    if (!customerPrice || isNaN(Number(customerPrice)) || Number(customerPrice) <= 0) {
+      setCustomerPriceError("Customer price is required and must be a positive number.");
+      toast({
+        title: "Customer Price Required",
+        description: "Please enter a valid customer price before confirming the vendor.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setCustomerPriceError("");
     try {
       // Approve the vendor response
       await supabase
@@ -349,17 +395,30 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
           reviewed_at: new Date().toISOString()
         })
         .eq('id', responseId);
-
-      // Update the order with vendor assignment and status
+      // Update the order with vendor assignment, status, and customer price
       const orderUpdates: any = {
         status: "Confirmed",
-        vendorId: vendorId
+        vendorId: vendorId,
+        customerPrice: Number(customerPrice)
       };
       if (proposedPrice) {
         orderUpdates.approxPrice = proposedPrice;
       }
       await supabaseStorage.updateOrder(orderId, orderUpdates);
-
+      // Auto-create payment record for this vendor/order if not exists
+      let vendorPrice: number = 0;
+      if (typeof proposedPrice === 'number' && !isNaN(proposedPrice)) {
+        vendorPrice = proposedPrice;
+      } else if (orderDetails && orderDetails.order && typeof orderDetails.order.approxPrice === 'number') {
+        vendorPrice = orderDetails.order.approxPrice;
+      }
+      if (vendorPrice > 0) {
+        await supabaseStorage.createOrUpdateOrderPayment({
+          orderId,
+          vendorId,
+          totalDue: vendorPrice
+        });
+      }
       // Optionally, update order_broadcasts status to accepted
       await supabase
         .from('order_broadcasts')
@@ -369,17 +428,16 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
         })
         .eq('order_id', orderId)
         .eq('vendor_id', vendorId);
-
       // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: ["supabase-vendor-responses", orderId] });
       queryClient.invalidateQueries({ queryKey: ["supabase-order-details", orderId] });
       queryClient.invalidateQueries({ queryKey: ["supabase-orders"] });
       queryClient.invalidateQueries({ queryKey: ["supabase-dashboard"] });
-
       toast({
         title: "Success",
         description: "Vendor approved and assigned to order",
       });
+      setCustomerPrice("");
     } catch (error: any) {
       const errorMessage = error?.message || "Failed to approve vendor";
       toast({
@@ -449,6 +507,44 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
       currency: 'INR',
       maximumFractionDigits: 0,
     }).format(Number(amount));
+  };
+
+  // Add payment/refund transaction
+  const handleAddPayment = async () => {
+    setPaymentError("");
+    if (!payments[0]?.id || !orderDetails || !orderDetails.order || !orderDetails.order.vendorId) {
+      setPaymentError("No payment record found for this vendor/order.");
+      return;
+    }
+    if (!newPaymentAmount || isNaN(Number(newPaymentAmount)) || Number(newPaymentAmount) <= 0) {
+      setPaymentError("Enter a valid amount.");
+      return;
+    }
+    const outstanding = Number(payments[0].total_due) - Number(payments[0].total_paid);
+    if (Number(newPaymentAmount) > outstanding) {
+      setPaymentError("Cannot pay more than outstanding amount.");
+      return;
+    }
+    setAddPaymentLoading(true);
+    try {
+      await supabaseStorage.addOrderPaymentTransaction({
+        paymentId: payments[0].id,
+        amount: Number(newPaymentAmount),
+        transactionType: newPaymentType,
+        notes: newPaymentNotes
+      });
+      // Refresh payments and transactions
+      const payment = await supabaseStorage.getVendorOrderPayment(orderId, orderDetails.order.vendorId);
+      setPayments(payment ? [payment] : []);
+      const txns = payment ? await supabaseStorage.getOrderPaymentTransactions(payment.id) : [];
+      setPaymentTransactions(txns);
+      setNewPaymentAmount("");
+      setNewPaymentNotes("");
+    } catch (e: any) {
+      setPaymentError(e.message || "Failed to add payment");
+    } finally {
+      setAddPaymentLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -542,7 +638,7 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                     {getStatusBadge(orderDetails?.order?.status || "Pending")}
                   </p>
                   <p>
-                    <span className="font-medium">Current Price:</span>{" "}
+                    <span className="font-medium">Current Vendor Price:</span>{" "}
                     <span className={`font-semibold ${
                       (!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) 
                         ? 'text-red-600' 
@@ -551,6 +647,19 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                       {(!orderDetails?.order?.approxPrice || orderDetails?.order?.approxPrice <= 0) 
                         ? 'Not Set' 
                         : formatCurrency(orderDetails?.order?.approxPrice)
+                      }
+                    </span>
+                  </p>
+                  <p>
+                    <span className="font-medium">Current Customer Price:</span>{" "}
+                    <span className={`font-semibold ${
+                      (!orderDetails?.order?.customerPrice || orderDetails?.order?.customerPrice <= 0) 
+                        ? 'text-red-600' 
+                        : 'text-blue-600'
+                    }`}>
+                      {(!orderDetails?.order?.customerPrice || orderDetails?.order?.customerPrice <= 0) 
+                        ? 'Not Set' 
+                        : formatCurrency(orderDetails?.order?.customerPrice)
                       }
                     </span>
                   </p>
@@ -934,21 +1043,40 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                                   </div>
                                 )}
                                 {!response.admin_approved && canApproveResponses && (
-                                  <div className="flex gap-2 mt-3">
-                                    <Button 
-                                      size="sm" 
-                                      className="bg-green-600 hover:bg-green-700"
-                                      onClick={() => handleApproveVendor(response.id, response.vendor_id, response.proposed_price)}
-                                    >
-                                      Approve & Assign
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      onClick={() => handleRejectVendor(response.id)}
-                                    >
-                                      Reject
-                                    </Button>
+                                  <div className="flex flex-col gap-2 mt-3">
+                                    <div>
+                                      <Label htmlFor="customerPrice" className="text-sm font-medium text-gray-700">
+                                        Customer Price (₹) <span className="text-red-500">*</span>
+                                      </Label>
+                                      <Input
+                                        id="customerPrice"
+                                        type="number"
+                                        value={customerPrice}
+                                        onChange={e => setCustomerPrice(e.target.value)}
+                                        placeholder="Enter customer price"
+                                        className="flex-1"
+                                        min={1}
+                                      />
+                                      {customerPriceError && (
+                                        <div className="text-xs text-red-600 mt-1">{customerPriceError}</div>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        size="sm" 
+                                        className="bg-green-600 hover:bg-green-700"
+                                        onClick={() => handleApproveVendor(response.id, response.vendor_id, response.proposed_price)}
+                                      >
+                                        Approve & Assign
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => handleRejectVendor(response.id)}
+                                      >
+                                        Reject
+                                      </Button>
+                                    </div>
                                   </div>
                                 )}
                                 {!response.admin_approved && !canApproveResponses && (
@@ -1261,7 +1389,92 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
               )}
             </div>
 
-            
+            {orderDetails?.order?.vendorId && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+                <h5 className="font-semibold text-admin-slate mb-2">Payments</h5>
+                {paymentLoading ? (
+                  <div>Loading payment info...</div>
+                ) : payments.length === 0 ? (
+                  <div className="text-gray-500">No payment record for this vendor/order.</div>
+                ) : (
+                  <>
+                    <div className="flex gap-8 mb-4">
+                      <div>
+                        <div className="text-xs text-gray-500">Total Due</div>
+                        <div className="font-bold text-lg text-blue-700">₹{payments[0].total_due}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500">Total Paid</div>
+                        <div className="font-bold text-lg text-green-700">₹{payments[0].total_paid}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500">Outstanding</div>
+                        <div className="font-bold text-lg text-red-700">₹{Number(payments[0].total_due) - Number(payments[0].total_paid)}</div>
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <h6 className="font-medium mb-1">Add Payment/Refund</h6>
+                      <div className="flex gap-2 items-end">
+                        <Input
+                          type="number"
+                          min={1}
+                          value={newPaymentAmount}
+                          onChange={e => setNewPaymentAmount(e.target.value)}
+                          placeholder="Amount"
+                          className="w-32"
+                        />
+                        <Select value={newPaymentType} onValueChange={v => setNewPaymentType(v as 'payment' | 'refund')}>
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="payment">Payment</SelectItem>
+                            <SelectItem value="refund">Refund</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          value={newPaymentNotes}
+                          onChange={e => setNewPaymentNotes(e.target.value)}
+                          placeholder="Notes (optional)"
+                          className="flex-1"
+                        />
+                        <Button onClick={handleAddPayment} disabled={addPaymentLoading} size="sm">
+                          {addPaymentLoading ? "Saving..." : "Add"}
+                        </Button>
+                      </div>
+                      {paymentError && <div className="text-xs text-red-600 mt-1">{paymentError}</div>}
+                    </div>
+                    <div>
+                      <h6 className="font-medium mb-1">Transaction History</h6>
+                      {paymentTransactions.length === 0 ? (
+                        <div className="text-gray-500">No transactions yet.</div>
+                      ) : (
+                        <table className="w-full text-xs border">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="p-2 text-left">Date</th>
+                              <th className="p-2 text-left">Type</th>
+                              <th className="p-2 text-left">Amount</th>
+                              <th className="p-2 text-left">Notes</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {paymentTransactions.map(txn => (
+                              <tr key={txn.id}>
+                                <td className="p-2">{new Date(txn.created_at).toLocaleString()}</td>
+                                <td className="p-2 capitalize">{txn.transaction_type}</td>
+                                <td className="p-2">₹{txn.amount}</td>
+                                <td className="p-2">{txn.notes || "-"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
       </DialogContent>

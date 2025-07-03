@@ -8,11 +8,14 @@ import {
   Settings,
   List,
   HelpCircle,
+  BarChart2,
+  CreditCard,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
   { name: "Orders", href: "/orders", icon: Package },
+  { name: "Payments", href: "/payments", icon: CreditCard },
   { name: "Users", href: "/users", icon: Users },
   { name: "Vendors", href: "/vendors", icon: UserCheck },
   { name: "Service Types", href: "/service-types", icon: Settings },

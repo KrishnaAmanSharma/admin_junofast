@@ -45,3 +45,57 @@ FOREIGN KEY (custom_item_id) REFERENCES custom_items(id);
 ALTER TABLE order_details 
 ADD CONSTRAINT order_details_order_id_fkey 
 FOREIGN KEY (order_id) REFERENCES orders(id);
+
+-- Add payments table for vendor/order payments
+CREATE TABLE IF NOT EXISTS public.order_payments (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_id uuid NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  vendor_id uuid NOT NULL REFERENCES public.vendor_profiles(id) ON DELETE CASCADE,
+  total_due numeric NOT NULL,
+  total_paid numeric NOT NULL DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+
+-- Add payment transactions table for history
+CREATE TABLE IF NOT EXISTS public.order_payment_transactions (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  payment_id uuid NOT NULL REFERENCES public.order_payments(id) ON DELETE CASCADE,
+  amount numeric NOT NULL,
+  transaction_type text NOT NULL CHECK (transaction_type IN ('payment', 'refund')),
+  notes text,
+  created_at timestamp with time zone DEFAULT now()
+);
+
+-- Add customer_price to orders table
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS customer_price numeric;
+
+-- Atomic function to add payment transaction and update total_paid
+create or replace function public.add_order_payment_transaction_atomic(
+  payment_id uuid,
+  amount numeric,
+  transaction_type text,
+  notes text default null
+)
+returns void as $$
+begin
+  -- Insert the transaction
+  insert into public.order_payment_transactions (payment_id, amount, transaction_type, notes, created_at)
+  values (payment_id, amount, transaction_type, notes, now());
+
+  -- Update the total_paid in order_payments
+  update public.order_payments
+  set total_paid = coalesce((
+    select sum(
+      case
+        when t.transaction_type = 'payment' then t.amount
+        when t.transaction_type = 'refund' then -t.amount
+        else 0
+      end
+    )
+    from public.order_payment_transactions t
+    where t.payment_id = public.order_payments.id
+  ), 0)
+  where id = payment_id;
+end;
+$$ language plpgsql;

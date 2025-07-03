@@ -12,6 +12,7 @@ import ServiceTypes from "@/pages/service-types";
 import CommonItems from "@/pages/common-items";
 import ServiceQuestions from "@/pages/service-questions";
 import NotFound from "@/pages/not-found";
+import PaymentsPage from "@/pages/payments";
 
 function Router() {
   return (
@@ -21,6 +22,7 @@ function Router() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/orders" component={Orders} />
+          <Route path="/payments" component={PaymentsPage} />
           <Route path="/users" component={Users} />
           <Route path="/vendors" component={Vendors} />
           <Route path="/service-types" component={ServiceTypes} />

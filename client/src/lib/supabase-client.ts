@@ -423,7 +423,6 @@ export const supabaseStorage = {
     // Map database field names to frontend field names and attach profiles
     return (orders || []).map(order => {
       const profile = profiles.find(p => p.id === order.user_id);
-      
       return {
         ...order,
         serviceType: order.service_type,
@@ -434,6 +433,7 @@ export const supabaseStorage = {
         dropAddress: order.drop_address,
         dropPincode: order.drop_pincode,
         approxPrice: order.approx_price,
+        customerPrice: order.customer_price,
         createdAt: order.created_at,
         updatedAt: order.updated_at,
         userId: order.user_id,
@@ -452,6 +452,7 @@ export const supabaseStorage = {
     const dbUpdates: any = {};
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.approxPrice !== undefined) dbUpdates.approx_price = updates.approxPrice;
+    if (updates.customerPrice !== undefined) dbUpdates.customer_price = updates.customerPrice;
     if (updates.serviceType !== undefined) dbUpdates.service_type = updates.serviceType;
     if (updates.pickupAddress !== undefined) dbUpdates.pickup_address = updates.pickupAddress;
     if (updates.pickupPincode !== undefined) dbUpdates.pickup_pincode = updates.pickupPincode;
@@ -466,9 +467,7 @@ export const supabaseStorage = {
       .eq('id', id)
       .select('*')
       .single();
-    
     if (error) throw error;
-    
     // Get profile data if user_id exists
     let profile = null;
     if (data.user_id) {
@@ -477,7 +476,6 @@ export const supabaseStorage = {
         .select('*')
         .eq('id', data.user_id)
         .single();
-      
       if (!profileError && profileData) {
         profile = {
           ...profileData,
@@ -487,7 +485,6 @@ export const supabaseStorage = {
         };
       }
     }
-    
     // Map response back to frontend field names
     return {
       ...data,
@@ -499,6 +496,7 @@ export const supabaseStorage = {
       dropAddress: data.drop_address,
       dropPincode: data.drop_pincode,
       approxPrice: data.approx_price,
+      customerPrice: data.customer_price,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       userId: data.user_id,
@@ -696,6 +694,7 @@ export const supabaseStorage = {
       dropAddress: order.drop_address,
       dropPincode: order.drop_pincode,
       approxPrice: order.approx_price,
+      customerPrice: order.customer_price,
       createdAt: order.created_at,
       updatedAt: order.updated_at,
       userId: order.user_id,
@@ -743,6 +742,72 @@ export const supabaseStorage = {
       .from('vendor_profiles')
       .select('*')
       .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  // --- ORDER PAYMENTS LOGIC ---
+  async getOrderPayments(orderId: string) {
+    // Get all payment records for an order (usually one per vendor)
+    const { data, error } = await supabase
+      .from('order_payments')
+      .select('*')
+      .eq('order_id', orderId);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getVendorOrderPayment(orderId: string, vendorId: string) {
+    // Get payment record for a specific vendor/order
+    const { data, error } = await supabase
+      .from('order_payments')
+      .select('*')
+      .eq('order_id', orderId)
+      .eq('vendor_id', vendorId)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async createOrUpdateOrderPayment({ orderId, vendorId, totalDue }: { orderId: string, vendorId: string, totalDue: number }) {
+    // Upsert payment record for vendor/order
+    const { data, error } = await supabase
+      .from('order_payments')
+      .upsert([
+        {
+          order_id: orderId,
+          vendor_id: vendorId,
+          total_due: totalDue,
+          updated_at: new Date().toISOString(),
+        }
+      ], { onConflict: 'order_id,vendor_id' })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async addOrderPaymentTransaction({ paymentId, amount, transactionType, notes }: { paymentId: string, amount: number, transactionType: 'payment' | 'refund', notes?: string }) {
+    // Add a payment or refund transaction atomically
+    const { error } = await supabase
+      .rpc('add_order_payment_transaction_atomic', {
+        payment_id: paymentId,
+        amount,
+        transaction_type: transactionType,
+        notes: notes || null
+      });
+    if (error) throw error;
+    // No need to update total_paid separately
+    return true;
+  },
+
+  async getOrderPaymentTransactions(paymentId: string) {
+    // Get all transactions for a payment record
+    const { data, error } = await supabase
+      .from('order_payment_transactions')
+      .select('*')
+      .eq('payment_id', paymentId)
+      .order('created_at');
     if (error) throw error;
     return data || [];
   }
