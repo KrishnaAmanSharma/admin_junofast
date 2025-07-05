@@ -319,29 +319,35 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
   };
 
   const handleApprovePrice = async (responseId: string, approved: boolean, proposedPrice?: number, vendorId?: string) => {
+    if (approved) {
+      if (!customerPrice || isNaN(Number(customerPrice)) || Number(customerPrice) <= 0) {
+        setCustomerPriceError("Customer price is required and must be a positive number.");
+        toast({
+          title: "Customer Price Required",
+          description: "Please enter a valid customer price before approving the price.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    setCustomerPriceError("");
     try {
-      // Update the vendor_responses table
-      const updates: any = {
-        admin_approved: approved,
-        admin_response: approved ? "Price approved by admin" : "Price rejected by admin",
-        reviewed_at: new Date().toISOString()
-      };
-      await supabase
-        .from('vendor_responses')
-        .update(updates)
-        .eq('id', responseId);
-
       if (approved && vendorId) {
-        // Assign vendor to order and set status to Confirmed, update price if provided
         const orderUpdates: any = {
           vendorId: vendorId,
-          status: "Confirmed"
+          status: "Confirmed",
+          approxPrice: proposedPrice,
+          customerPrice: Number(customerPrice)
         };
-        if (proposedPrice) {
-          orderUpdates.approxPrice = proposedPrice;
-        }
         await supabaseStorage.updateOrder(orderId, orderUpdates);
-        // Update order_broadcasts status to accepted
+        await supabase
+          .from('vendor_responses')
+          .update({
+            admin_approved: true,
+            admin_response: "Price approved by admin",
+            reviewed_at: new Date().toISOString()
+          })
+          .eq('id', responseId);
         await supabase
           .from('order_broadcasts')
           .update({
@@ -350,20 +356,43 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
           })
           .eq('order_id', orderId)
           .eq('vendor_id', vendorId);
+        toast({
+          title: "Price Approved & Vendor Assigned",
+          description: "Vendor price has been approved, assigned, and order updated",
+        });
+        setCustomerPrice("");
       } else if (approved && proposedPrice) {
-        // If only price is approved, update the order price
         await supabaseStorage.updateOrder(orderId, { approxPrice: proposedPrice });
+        await supabase
+          .from('vendor_responses')
+          .update({
+            admin_approved: true,
+            admin_response: "Price approved by admin",
+            reviewed_at: new Date().toISOString()
+          })
+          .eq('id', responseId);
+        toast({
+          title: "Price Approved",
+          description: "Vendor price has been approved and order updated",
+        });
+        setCustomerPrice("");
+      } else {
+        await supabase
+          .from('vendor_responses')
+          .update({
+            admin_approved: false,
+            admin_response: "Price rejected by admin",
+            reviewed_at: new Date().toISOString()
+          })
+          .eq('id', responseId);
+        toast({
+          title: "Price Rejected",
+          description: "Vendor price request has been rejected",
+        });
       }
-
-      // Refresh vendor responses
       queryClient.invalidateQueries({ queryKey: ["supabase-vendor-responses", orderId] });
       queryClient.invalidateQueries({ queryKey: ["supabase-orders"] });
       queryClient.invalidateQueries({ queryKey: ["supabase-order-details", orderId] });
-
-      toast({
-        title: approved ? "Price Approved & Vendor Assigned" : "Price Rejected",
-        description: approved ? "Vendor price has been approved, assigned, and order updated" : "Vendor price request has been rejected",
-      });
     } catch (error: any) {
       const errorMessage = error?.message || "Failed to process price approval";
       toast({
@@ -1085,21 +1114,40 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                                   <p className="text-sm text-gray-600 mb-2 italic">"{response.message}"</p>
                                 )}
                                 {!response.admin_approved && canApproveResponses && (
-                                  <div className="flex gap-2">
-                                    <Button 
-                                      size="sm" 
-                                      className="bg-blue-600 hover:bg-blue-700"
-                                      onClick={() => handleApprovePrice(response.id, true, response.proposed_price, response.vendor_id)}
-                                    >
-                                      Approve and Assign
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      onClick={() => handleApprovePrice(response.id, false)}
-                                    >
-                                      Reject
-                                    </Button>
+                                  <div className="flex flex-col gap-2 mt-3">
+                                    <div>
+                                      <Label htmlFor="customerPrice-update" className="text-sm font-medium text-gray-700">
+                                        Customer Price (₹) <span className="text-red-500">*</span>
+                                      </Label>
+                                      <Input
+                                        id="customerPrice-update"
+                                        type="number"
+                                        value={customerPrice}
+                                        onChange={e => setCustomerPrice(e.target.value)}
+                                        placeholder="Enter customer price"
+                                        className="flex-1"
+                                        min={1}
+                                      />
+                                      {customerPriceError && (
+                                        <div className="text-xs text-red-600 mt-1">{customerPriceError}</div>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        size="sm" 
+                                        className="bg-blue-600 hover:bg-blue-700"
+                                        onClick={() => handleApprovePrice(response.id, true, response.proposed_price, response.vendor_id)}
+                                      >
+                                        Approve and Assign
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => handleApprovePrice(response.id, false)}
+                                      >
+                                        Reject
+                                      </Button>
+                                    </div>
                                   </div>
                                 )}
                                 {!response.admin_approved && !canApproveResponses && (
