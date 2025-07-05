@@ -99,3 +99,42 @@ begin
   where id = payment_id;
 end;
 $$ language plpgsql;
+
+-- Atomic function to approve vendor, update order, upsert payment, and update broadcast
+create or replace function public.approve_vendor_and_create_payment_atomic(
+  p_order_id uuid,
+  p_vendor_id uuid,
+  p_response_id uuid,
+  p_customer_price numeric,
+  p_approx_price numeric
+)
+returns void as $$
+begin
+  -- 1. Approve the vendor response
+  update vendor_responses
+  set admin_approved = true,
+      admin_response = 'Vendor approved and assigned to order',
+      reviewed_at = now()
+  where id = p_response_id;
+
+  -- 2. Update the order with vendor assignment, status, and prices
+  update orders
+  set status = 'Confirmed',
+      vendor_id = p_vendor_id,
+      customer_price = p_customer_price,
+      approx_price = p_approx_price
+  where id = p_order_id;
+
+  -- 3. Upsert payment record for this vendor/order
+  insert into order_payments (order_id, vendor_id, total_due, updated_at)
+  values (p_order_id, p_vendor_id, p_approx_price, now())
+  on conflict (order_id, vendor_id)
+  do update set total_due = excluded.total_due, updated_at = now();
+
+  -- 4. Update order_broadcasts status to accepted
+  update order_broadcasts
+  set status = 'accepted',
+      response_at = now()
+  where order_id = p_order_id and vendor_id = p_vendor_id;
+end;
+$$ language plpgsql;

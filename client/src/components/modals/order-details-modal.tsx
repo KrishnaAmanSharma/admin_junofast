@@ -386,40 +386,14 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     }
     setCustomerPriceError("");
     try {
-      // Approve the vendor response
-      await supabase
-        .from('vendor_responses')
-        .update({
-          admin_approved: true,
-          admin_response: "Vendor approved and assigned to order",
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', responseId);
-      // Update the order with vendor assignment, status, and customer price
-      const orderUpdates: any = {
-        status: "Confirmed",
-        vendorId: vendorId,
-        customerPrice: Number(customerPrice)
-      };
-      if (proposedPrice) {
-        orderUpdates.approxPrice = proposedPrice;
-      }
-      await supabaseStorage.updateOrder(orderId, orderUpdates);
-      // Always create or update the payment record with the approx price as total due
-      await supabaseStorage.createOrUpdateOrderPayment({
-        orderId,
-        vendorId,
-        totalDue: orderDetails?.order?.approxPrice ?? 0
+      // Atomically approve vendor, update order, upsert payment, and update broadcast
+      await supabase.rpc('approve_vendor_and_create_payment_atomic', {
+        p_order_id: orderId,
+        p_vendor_id: vendorId,
+        p_response_id: responseId,
+        p_customer_price: Number(customerPrice),
+        p_approx_price: orderDetails?.order?.approxPrice ?? 0
       });
-      // Optionally, update order_broadcasts status to accepted
-      await supabase
-        .from('order_broadcasts')
-        .update({
-          status: 'accepted',
-          response_at: new Date().toISOString()
-        })
-        .eq('order_id', orderId)
-        .eq('vendor_id', vendorId);
       // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: ["supabase-vendor-responses", orderId] });
       queryClient.invalidateQueries({ queryKey: ["supabase-order-details", orderId] });
