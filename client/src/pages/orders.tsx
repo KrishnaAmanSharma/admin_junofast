@@ -18,6 +18,8 @@ import { Download } from "lucide-react";
 import type { Order, ServiceType } from "@shared/schema";
 import { supabaseStorage } from "@/lib/supabase-client";
 
+type OrderWithProfile = Order & { profile?: { fullName?: string; email?: string } };
+
 export default function Orders() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,7 +42,7 @@ export default function Orders() {
         mappedFilters.serviceType = filters.serviceType;
       }
       // Optionally add more filters if getOrders supports them
-      return supabaseStorage.getOrders(mappedFilters);
+      return supabaseStorage.getOrders({ ...mappedFilters, search: searchTerm });
     }
   });
 
@@ -56,6 +58,19 @@ export default function Orders() {
     // TODO: Implement export functionality
     console.log("Exporting orders...");
   };
+
+  // Filter orders in the frontend using the search term (like payments page)
+  const filteredOrders = (orders as OrderWithProfile[] || []).filter(order => {
+    const search = searchTerm.trim().toLowerCase();
+    if (!search) return true;
+    const profile = order.profile || {};
+    return (
+      (order.id && order.id.toLowerCase().includes(search)) ||
+      (order.serviceType && order.serviceType.toLowerCase().includes(search)) ||
+      (profile.fullName && profile.fullName.toLowerCase().includes(search)) ||
+      (profile.email && profile.email.toLowerCase().includes(search))
+    );
+  });
 
   return (
     <div>
@@ -161,7 +176,7 @@ export default function Orders() {
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold text-admin-slate mb-4">All Orders</h3>
             <OrdersTable 
-              orders={orders || []} 
+              orders={filteredOrders} 
               isLoading={isLoading}
               onViewOrder={setSelectedOrderId}
               onEditOrder={setSelectedOrderId}

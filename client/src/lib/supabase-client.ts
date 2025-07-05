@@ -384,7 +384,7 @@ export const supabaseStorage = {
     }
   },
 
-  async getOrders(filters?: { status?: string; serviceType?: string; limit?: number }) {
+  async getOrders(filters?: { status?: string; serviceType?: string; limit?: number; search?: string }) {
     let query = supabase
       .from('orders')
       .select('*')
@@ -421,7 +421,7 @@ export const supabaseStorage = {
     }
     
     // Map database field names to frontend field names and attach profiles
-    return (orders || []).map(order => {
+    let mappedOrders = (orders || []).map(order => {
       const profile = profiles.find(p => p.id === order.user_id);
       return {
         ...order,
@@ -445,6 +445,9 @@ export const supabaseStorage = {
         } : null
       };
     });
+
+    // No frontend search filter here; will be done in the page
+    return mappedOrders;
   },
 
   async updateOrder(id: string, updates: any) {
