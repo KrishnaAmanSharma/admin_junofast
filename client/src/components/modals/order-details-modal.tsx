@@ -405,20 +405,12 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
         orderUpdates.approxPrice = proposedPrice;
       }
       await supabaseStorage.updateOrder(orderId, orderUpdates);
-      // Auto-create payment record for this vendor/order if not exists
-      let vendorPrice: number = 0;
-      if (typeof proposedPrice === 'number' && !isNaN(proposedPrice)) {
-        vendorPrice = proposedPrice;
-      } else if (orderDetails && orderDetails.order && typeof orderDetails.order.approxPrice === 'number') {
-        vendorPrice = orderDetails.order.approxPrice;
-      }
-      if (vendorPrice > 0) {
-        await supabaseStorage.createOrUpdateOrderPayment({
-          orderId,
-          vendorId,
-          totalDue: vendorPrice
-        });
-      }
+      // Always create or update the payment record with the approx price as total due
+      await supabaseStorage.createOrUpdateOrderPayment({
+        orderId,
+        vendorId,
+        totalDue: orderDetails?.order?.approxPrice ?? 0
+      });
       // Optionally, update order_broadcasts status to accepted
       await supabase
         .from('order_broadcasts')
