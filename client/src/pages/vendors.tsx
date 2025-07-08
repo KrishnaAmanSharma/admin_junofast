@@ -241,16 +241,6 @@ export default function VendorsPage() {
                             <div className="font-semibold text-admin-slate">{vendor.completed_orders}</div>
                             <div className="text-gray-600">Completed</div>
                           </div>
-                          <div className="text-center p-2 bg-gray-50 rounded">
-                            <div className="font-semibold text-admin-slate">₹{vendor.total_earnings.toLocaleString()}</div>
-                            <div className="text-gray-600">Earnings</div>
-                          </div>
-                          <div className="text-center p-2 bg-gray-50 rounded">
-                            <div className="font-semibold text-admin-slate">
-                              {vendor.last_active_at ? new Date(vendor.last_active_at).toLocaleDateString() : 'Never'}
-                            </div>
-                            <div className="text-gray-600">Last Active</div>
-                          </div>
                         </div>
                       )}
                     </div>
@@ -374,7 +364,7 @@ export default function VendorsPage() {
 
               {/* Performance Metrics (if approved) */}
               {selectedVendor.status === 'approved' && (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-4 bg-gray-50 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600">{selectedVendor.rating.toFixed(1)}</div>
                     <div className="text-sm text-gray-600">Rating</div>
@@ -382,10 +372,6 @@ export default function VendorsPage() {
                   <div className="text-center p-4 bg-gray-50 rounded-lg">
                     <div className="text-2xl font-bold text-green-600">{selectedVendor.completed_orders}</div>
                     <div className="text-sm text-gray-600">Completed Orders</div>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">₹{selectedVendor.total_earnings.toLocaleString()}</div>
-                    <div className="text-sm text-gray-600">Total Earnings</div>
                   </div>
                 </div>
               )}

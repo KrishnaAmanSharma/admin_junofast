@@ -223,19 +223,6 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     });
   };
 
-  const handleUpdateStatus = () => {
-    if (!newStatus || !orderId) return;
-    
-    const updates: any = {
-      status: newStatus,
-    };
-    
-    updateOrderMutation.mutate({
-      id: orderId,
-      updates,
-    });
-  };
-
   const handleAssignVendor = () => {
     if (!orderId) return;
     if (orderDetails?.order?.vendorId) {
@@ -540,6 +527,23 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
     } finally {
       setAddPaymentLoading(false);
     }
+  };
+
+  // Add cancel order logic
+  const handleCancelOrder = () => {
+    if (!orderId) return;
+    if (orderDetails?.order?.status === "Completed" || orderDetails?.order?.status === "Cancelled") {
+      toast({
+        title: "Cannot Cancel",
+        description: "This order is already completed or cancelled.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateOrderMutation.mutate({
+      id: orderId,
+      updates: { status: "Cancelled" },
+    });
   };
 
   if (!isOpen) return null;
@@ -1167,31 +1171,18 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
 
               {/* Status Update */}
               <div className="max-w-md">
-                <Label htmlFor="newStatus" className="text-sm font-medium text-gray-700">
-                  Update Status
-                </Label>
-                <div className="flex gap-2 mt-1">
-                  <Select value={newStatus} onValueChange={setNewStatus}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select new status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {orderDetails?.order?.vendorId && (
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                      )}
-                      <SelectItem value="Completed">Completed</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    onClick={handleUpdateStatus}
-                    disabled={updateOrderMutation.isPending || !newStatus}
-                    size="sm"
-                    variant="outline"
-                  >
-                    {updateOrderMutation.isPending ? "Updating..." : "Update Status"}
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleCancelOrder}
+                  disabled={updateOrderMutation.isPending || orderDetails?.order?.status === "Completed" || orderDetails?.order?.status === "Cancelled"}
+                  size="sm"
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {updateOrderMutation.isPending ? "Cancelling..." : "Cancel Order"}
+                </Button>
+                {(orderDetails?.order?.status === "Completed" || orderDetails?.order?.status === "Cancelled") && (
+                  <p className="text-xs text-amber-600 mt-1">Order cannot be cancelled as it is already completed or cancelled.</p>
+                )}
               </div>
 
               {/* Price Update */}
@@ -1361,6 +1352,14 @@ export function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModa
                         </span>
                         <span>{qa.answer}</span>
                       </div>
+                      {(qa.questionType === "add item" || qa.questionType === "add_items_entry") && (
+                        <div className="mt-1 text-xs text-gray-700">
+                          {qa.description && <div><b>Description:</b> {qa.description}</div>}
+                          {qa.quantity && <div><b>Quantity:</b> {qa.quantity}</div>}
+                          {qa.additional_data?.description && <div><b>Description:</b> {qa.additional_data.description}</div>}
+                          {qa.additional_data?.quantity && <div><b>Quantity:</b> {qa.additional_data.quantity}</div>}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
