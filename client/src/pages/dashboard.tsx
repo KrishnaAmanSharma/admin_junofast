@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import type { Order, Profile } from "@shared/schema";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { supabaseStorage } from "@/lib/supabase-client";
 
 type OrderWithProfile = Order & { profile: Profile | null };
 
@@ -23,11 +24,13 @@ export default function Dashboard() {
   const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
 
   const { data: metrics, isLoading: metricsLoading } = useQuery({
-    queryKey: ["/api/dashboard/metrics"],
+    queryKey: ["dashboard-metrics"],
+    queryFn: () => supabaseStorage.getDashboardMetrics(),
   });
 
   const { data: recentOrders, isLoading: ordersLoading } = useQuery<OrderWithProfile[]>({
-    queryKey: ["/api/dashboard/recent-orders"],
+    queryKey: ["dashboard-recent-orders"],
+    queryFn: () => supabaseStorage.getRecentOrdersRequiringAttention(),
   });
 
   const formatCurrency = (amount: number) => {

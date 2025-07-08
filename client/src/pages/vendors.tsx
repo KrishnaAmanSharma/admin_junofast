@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { VendorOrdersModal } from "@/components/modals/vendor-orders-modal";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getVendors } from "@/lib/supabase-client";
@@ -22,7 +23,8 @@ import {
   Building,
   Clock,
   DollarSign,
-  User
+  User,
+  Package
 } from "lucide-react";
 
 interface Vendor {
@@ -51,6 +53,8 @@ interface Vendor {
 export default function VendorsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [vendorOrdersModalOpen, setVendorOrdersModalOpen] = useState(false);
+  const [selectedVendorForOrders, setSelectedVendorForOrders] = useState<Vendor | null>(null);
   const [activeTab, setActiveTab] = useState("pending");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -255,6 +259,21 @@ export default function VendorsPage() {
                         View
                       </Button>
                       
+                      {vendor.status === 'approved' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
+                          onClick={() => {
+                            setSelectedVendorForOrders(vendor);
+                            setVendorOrdersModalOpen(true);
+                          }}
+                        >
+                          <Package className="h-4 w-4 mr-1" />
+                          View Orders
+                        </Button>
+                      )}
+                      
                       {vendor.status === 'pending_approval' && (
                         <>
                           <Button
@@ -402,6 +421,16 @@ export default function VendorsPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Vendor Orders Modal */}
+      <VendorOrdersModal
+        vendor={selectedVendorForOrders}
+        isOpen={vendorOrdersModalOpen}
+        onClose={() => {
+          setVendorOrdersModalOpen(false);
+          setSelectedVendorForOrders(null);
+        }}
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { UserDetailModal } from "@/components/modals/user-detail-modal";
 import { EditUserModal } from "@/components/modals/edit-user-modal";
 import { UserPlus } from "lucide-react";
 import type { Profile } from "@shared/schema";
+import { supabaseStorage } from "@/lib/supabase-client";
 
 export default function Users() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -18,7 +19,8 @@ export default function Users() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const { data: profiles, isLoading } = useQuery<Profile[]>({
-    queryKey: ["/api/profiles", { search: searchTerm }],
+    queryKey: ["profiles", { search: searchTerm }],
+    queryFn: () => supabaseStorage.getProfiles(searchTerm),
   });
 
 

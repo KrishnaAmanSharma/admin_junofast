@@ -1,166 +1,222 @@
-import { pgTable, text, uuid, boolean, timestamp, numeric, integer, jsonb, doublePrecision } from "drizzle-orm/pg-core";
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Service Types
-export const serviceTypes = pgTable("service_types", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  imageUrl: text("image_url").notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+// Base Types
+export interface ServiceType {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+  fullName: string | null;
+  phoneNumber: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Order {
+  id: string;
+  userId: string | null;
+  vendorId?: string | null;
+  serviceType: string;
+  status: string;
+  pickupAddress: string;
+  pickupPincode: string;
+  pickupLatitude: number | null;
+  pickupLongitude: number | null;
+  dropAddress: string;
+  dropPincode: string;
+  dropLatitude?: number | null;
+  dropLongitude?: number | null;
+  estimatedPrice?: number | null;
+  finalPrice?: number | null;
+  scheduledDate?: string | null;
+  completedDate?: string | null;
+  notes?: string | null;
+  approxPrice: number | null;
+  customerPrice?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommonItem {
+  id: string;
+  serviceTypeId: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ServiceQuestion {
+  id: string;
+  serviceTypeId: string;
+  question: string;
+  questionType: string;
+  isRequired: boolean;
+  displayOrder: number;
+  options: any[] | null;
+  parentQuestionId: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommonItemInOrder {
+  id: string;
+  orderId: string;
+  itemId: string;
+  name: string;
+  quantity: number;
+  description: string | null;
+  imageUrl: string | null;
+  createdAt: string;
+}
+
+export interface CustomItem {
+  id: string;
+  orderId: string;
+  name: string;
+  description: string | null;
+  quantity: number;
+  createdAt: string;
+  photos?: ItemPhoto[];
+}
+
+export interface OrderQuestionAnswer {
+  id: string;
+  orderId: string;
+  questionId: string;
+  question: string;
+  answer: string;
+  questionType: string;
+  parentQuestionId: string | null;
+  additionalData: any | null;
+  createdAt: string;
+}
+
+export interface ItemPhoto {
+  id: string;
+  customItemId: string;
+  photoUrl: string;
+  createdAt: string;
+}
+
+export interface OrderDetail {
+  id: string;
+  orderId: string;
+  name: string;
+  value: string;
+  createdAt: string;
+}
+
+// Vendor Types
+export interface VendorProfile {
+  id: string;
+  businessName: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  city: string;
+  serviceTypes: string[];
+  rating: number;
+  isOnline: boolean;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorResponse {
+  id: string;
+  orderId: string;
+  vendorId: string;
+  responseType: 'accept' | 'reject' | 'price_update';
+  proposedPrice?: number;
+  message?: string;
+  adminApproved?: boolean;
+  adminResponse?: string;
+  reviewedAt?: string;
+  createdAt: string;
+}
+
+export interface OrderBroadcast {
+  id: string;
+  orderId: string;
+  vendorId: string;
+  broadcastAt: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'expired';
+  responseAt?: string;
+  expiresAt: string;
+}
+
+// Payment Types
+export interface OrderPayment {
+  id: string;
+  orderId: string;
+  vendorId: string;
+  totalDue: number;
+  totalPaid: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderPaymentTransaction {
+  id: string;
+  paymentId: string;
+  amount: number;
+  transactionType: 'payment' | 'refund';
+  notes?: string;
+  createdAt: string;
+}
+
+// Validation Schemas
+export const insertServiceTypeSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().min(1, "Description is required"),
+  imageUrl: z.string().url("Must be a valid URL"),
+  isActive: z.boolean().default(true),
 });
 
-// Profiles (linked to Supabase auth.users)
-export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey(),
-  email: text("email").notNull(),
-  fullName: text("full_name"),
-  phoneNumber: text("phone_number"),
-  avatarUrl: text("avatar_url"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+export const insertCommonItemSchema = z.object({
+  serviceTypeId: z.string().uuid("Must be a valid UUID"),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().min(1, "Description is required"),
+  imageUrl: z.string().url("Must be a valid URL"),
+  isActive: z.boolean().default(true),
 });
 
-// Orders
-export const orders = pgTable("orders", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").references(() => profiles.id),
-  serviceType: text("service_type").notNull(),
-  pickupAddress: text("pickup_address").notNull(),
-  pickupPincode: text("pickup_pincode").notNull(),
-  pickupLatitude: doublePrecision("pickup_latitude"),
-  pickupLongitude: doublePrecision("pickup_longitude"),
-  dropAddress: text("drop_address").notNull(),
-  dropPincode: text("drop_pincode").notNull(),
-  status: text("status").default("Pending"),
-  approxPrice: numeric("approx_price"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+export const insertServiceQuestionSchema = z.object({
+  serviceTypeId: z.string().uuid("Must be a valid UUID"),
+  question: z.string().min(1, "Question is required"),
+  questionType: z.enum(["text", "select", "multiselect", "number", "date"]),
+  isRequired: z.boolean().default(true),
+  displayOrder: z.number().int().min(0).default(0),
+  options: z.array(z.string()).optional(),
+  parentQuestionId: z.string().uuid().optional(),
+  isActive: z.boolean().default(true),
 });
 
-// Common Items
-export const commonItems = pgTable("common_items", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  serviceTypeId: uuid("service_type_id").references(() => serviceTypes.id),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  imageUrl: text("image_url").notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+export const updateOrderSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(["Pending", "Broadcasted", "Confirmed", "Price Accepted", "In Progress", "Completed", "Cancelled"]).optional(),
+  approxPrice: z.number().positive().optional(),
+  finalPrice: z.number().positive().optional(),
+  estimatedPrice: z.number().positive().optional(),
+  notes: z.string().optional(),
+  vendorId: z.string().uuid().optional(),
 });
 
-// Service Questions
-export const serviceQuestions = pgTable("service_questions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  serviceTypeId: uuid("service_type_id").notNull().references(() => serviceTypes.id),
-  question: text("question").notNull(),
-  questionType: text("question_type").notNull(),
-  isRequired: boolean("is_required").default(true),
-  displayOrder: integer("display_order").default(0),
-  options: jsonb("options"),
-  parentQuestionId: uuid("parent_question_id"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
-
-// Common Items in Orders
-export const commonItemsInOrders = pgTable("common_items_in_orders", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  orderId: uuid("order_id").references(() => orders.id),
-  itemId: uuid("item_id").references(() => commonItems.id),
-  name: text("name").notNull(),
-  quantity: integer("quantity").notNull().default(1),
-  description: text("description"),
-  imageUrl: text("image_url"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
-
-// Custom Items
-export const customItems = pgTable("custom_items", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  orderId: uuid("order_id").references(() => orders.id),
-  name: text("name").notNull(),
-  description: text("description"),
-  quantity: integer("quantity").notNull().default(1),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
-
-// Order Question Answers
-export const orderQuestionAnswers = pgTable("order_question_answers", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  orderId: uuid("order_id").notNull().references(() => orders.id),
-  questionId: uuid("question_id").notNull(),
-  question: text("question").notNull(),
-  answer: text("answer").notNull(),
-  questionType: text("question_type").notNull(),
-  parentQuestionId: uuid("parent_question_id"),
-  additionalData: jsonb("additional_data"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
-
-// Item Photos
-export const itemPhotos = pgTable("item_photos", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  customItemId: uuid("custom_item_id").references(() => customItems.id),
-  photoUrl: text("photo_url").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
-
-// Order Details
-export const orderDetails = pgTable("order_details", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  orderId: uuid("order_id").references(() => orders.id),
-  name: text("name").notNull(),
-  value: text("value").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
-
-// Schemas
-export const insertServiceTypeSchema = createInsertSchema(serviceTypes).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertCommonItemSchema = createInsertSchema(commonItems).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertServiceQuestionSchema = createInsertSchema(serviceQuestions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const updateOrderSchema = createInsertSchema(orders).pick({
-  status: true,
-  approxPrice: true,
-}).extend({
-  id: z.string(),
-});
-
-// Types
-export type ServiceType = typeof serviceTypes.$inferSelect;
+// Type exports for backward compatibility
 export type InsertServiceType = z.infer<typeof insertServiceTypeSchema>;
-
-export type Profile = typeof profiles.$inferSelect;
-
-export type Order = typeof orders.$inferSelect;
-export type UpdateOrder = z.infer<typeof updateOrderSchema>;
-
-export type CommonItem = typeof commonItems.$inferSelect;
 export type InsertCommonItem = z.infer<typeof insertCommonItemSchema>;
-
-export type ServiceQuestion = typeof serviceQuestions.$inferSelect;
 export type InsertServiceQuestion = z.infer<typeof insertServiceQuestionSchema>;
-
-export type CommonItemInOrder = typeof commonItemsInOrders.$inferSelect;
-export type CustomItem = typeof customItems.$inferSelect;
-export type OrderQuestionAnswer = typeof orderQuestionAnswers.$inferSelect;
+export type UpdateOrder = z.infer<typeof updateOrderSchema>;

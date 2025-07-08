@@ -390,10 +390,10 @@ export const supabaseStorage = {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (filters?.status && filters.status !== 'All Status') {
+    if (filters?.status && filters.status !== 'all' && filters.status !== '') {
       query = query.eq('status', filters.status);
     }
-    if (filters?.serviceType && filters.serviceType !== 'All Services') {
+    if (filters?.serviceType && filters.serviceType !== 'all' && filters.serviceType !== '') {
       query = query.eq('service_type', filters.serviceType);
     }
     if (filters?.limit) {
@@ -813,6 +813,191 @@ export const supabaseStorage = {
       .order('created_at');
     if (error) throw error;
     return data || [];
+  },
+
+  // --- VENDOR ORDER MANAGEMENT ---
+  async getVendorOrders(vendorId: string, filters?: { 
+    status?: string; 
+    serviceType?: string; 
+    dateRange?: string; 
+    search?: string; 
+    limit?: number 
+  }) {
+    let query = supabase
+      .from('orders')
+      .select('*')
+      .eq('vendor_id', vendorId)
+      .order('created_at', { ascending: false });
+
+    if (filters?.status && filters.status !== 'All Status') {
+      query = query.eq('status', filters.status);
+    }
+    if (filters?.serviceType && filters.serviceType !== 'All Services') {
+      query = query.eq('service_type', filters.serviceType);
+    }
+    if (filters?.dateRange) {
+      query = query.gte('created_at', filters.dateRange);
+    }
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+    }
+
+    const { data: orders, error } = await query;
+    if (error) throw error;
+    
+    // Get unique user IDs from orders
+    const allUserIds = orders?.map(order => order.user_id).filter(Boolean) || [];
+    const userIds = allUserIds.filter((id, index) => allUserIds.indexOf(id) === index);
+    
+    // Fetch profile data separately
+    let profiles = [];
+    if (userIds.length > 0) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+      
+      if (!profileError) {
+        profiles = profileData || [];
+      }
+    }
+    
+    // Map database field names to frontend field names and attach profiles
+    let mappedOrders = (orders || []).map(order => {
+      const profile = profiles.find(p => p.id === order.user_id);
+      return {
+        ...order,
+        serviceType: order.service_type,
+        pickupAddress: order.pickup_address,
+        pickupPincode: order.pickup_pincode,
+        pickupLatitude: order.pickup_latitude,
+        pickupLongitude: order.pickup_longitude,
+        dropAddress: order.drop_address,
+        dropPincode: order.drop_pincode,
+        approxPrice: order.approx_price,
+        customerPrice: order.customer_price,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at,
+        userId: order.user_id,
+        vendorId: order.vendor_id,
+        profile: profile ? {
+          ...profile,
+          fullName: profile.full_name,
+          phoneNumber: profile.phone_number,
+          avatarUrl: profile.avatar_url
+        } : null
+      };
+    });
+
+    // Apply search filter if provided
+    if (filters?.search && filters.search.trim() !== '') {
+      const searchTerm = filters.search.toLowerCase().trim();
+      mappedOrders = mappedOrders.filter(order => {
+        // Search in order ID
+        if (order.id.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in service type
+        if (order.serviceType?.toLowerCase().includes(searchTerm)) return true;
+        
+        // Search in customer profile data
+        if (order.profile) {
+          if (order.profile.email?.toLowerCase().includes(searchTerm)) return true;
+          if (order.profile.fullName?.toLowerCase().includes(searchTerm)) return true;
+          if (order.profile.phoneNumber?.includes(searchTerm)) return true;
+        }
+        
+        // Search in addresses
+        if (order.pickupAddress?.toLowerCase().includes(searchTerm)) return true;
+        if (order.dropAddress?.toLowerCase().includes(searchTerm)) return true;
+        
+        return false;
+      });
+    }
+
+    return mappedOrders;
+  },
+
+  async getVendorMetrics(vendorId: string) {
+    // Get vendor's order statistics
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('id, status, approx_price, created_at')
+      .eq('vendor_id', vendorId);
+
+    if (ordersError) throw ordersError;
+
+    const totalOrders = orders?.length || 0;
+    const completedOrders = orders?.filter(order => order.status === 'Completed').length || 0;
+    const inProgressOrders = orders?.filter(order => order.status === 'In Progress').length || 0;
+    const totalEarnings = orders?.filter(order => order.status === 'Completed')
+      .reduce((sum, order) => sum + (Number(order.approx_price) || 0), 0) || 0;
+
+    // Get recent orders (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentOrders = orders?.filter(order => 
+      new Date(order.created_at) >= thirtyDaysAgo
+    ).length || 0;
+
+    // Get vendor rating
+    const { data: vendorData, error: vendorError } = await supabase
+      .from('vendor_profiles')
+      .select('rating, total_orders, completed_orders, total_earnings')
+      .eq('id', vendorId)
+      .single();
+
+    if (vendorError) throw vendorError;
+
+    return {
+      totalOrders,
+      completedOrders,
+      inProgressOrders,
+      totalEarnings,
+      recentOrders,
+      rating: vendorData?.rating || 0,
+      completionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0
+    };
+  },
+
+  async getVendorsWithOrderCounts() {
+    const { data: vendors, error: vendorsError } = await supabase
+      .from('vendor_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (vendorsError) throw vendorsError;
+
+    // Get order counts for each vendor
+    const vendorsWithCounts = await Promise.all(
+      (vendors || []).map(async (vendor) => {
+        const { data: orders, error: ordersError } = await supabase
+          .from('orders')
+          .select('id, status')
+          .eq('vendor_id', vendor.id);
+
+        if (ordersError) {
+          console.error('Error fetching orders for vendor:', vendor.id, ordersError);
+          return {
+            ...vendor,
+            orderCount: 0,
+            activeOrderCount: 0
+          };
+        }
+
+        const orderCount = orders?.length || 0;
+        const activeOrderCount = orders?.filter(order => 
+          ['Pending', 'Confirmed', 'In Progress'].includes(order.status)
+        ).length || 0;
+
+        return {
+          ...vendor,
+          orderCount,
+          activeOrderCount
+        };
+      })
+    );
+
+    return vendorsWithCounts;
   }
 };
 
